@@ -1,0 +1,1 @@
+/usr/bin/c++  -g -g CMakeFiles/P2UPDAF.dir/src/main.cpp.o -o P2UPDAF   -L/home/ziyidong/PQCProjects/LatticeCryBendmarking/lib 
