@@ -1,1 +1,1 @@
-/usr/bin/c++  -g -g CMakeFiles/LatticeCryBenchmarking.dir/src/main.cpp.o -o LatticeCryBenchmarking   -L/home/ziyidong/PQCProjects/LatticeCryBendmarking/lib 
+/usr/bin/g++  -g -g CMakeFiles/LatticeCryBenchmarking.dir/src/main.cpp.o -o LatticeCryBenchmarking   -L/home/ziyidong/PBCProjects/LatticeCryBendmarking/lib 

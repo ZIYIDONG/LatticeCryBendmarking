@@ -768,8 +768,8 @@
 	"kind" : "cmakeFiles",
 	"paths" : 
 	{
-		"build" : "/home/ziyidong/PQCProjects/LatticeCryBendmarking/build",
-		"source" : "/home/ziyidong/PQCProjects/LatticeCryBendmarking"
+		"build" : "/home/ziyidong/PBCProjects/LatticeCryBendmarking/build",
+		"source" : "/home/ziyidong/PBCProjects/LatticeCryBendmarking"
 	},
 	"version" : 
 	{

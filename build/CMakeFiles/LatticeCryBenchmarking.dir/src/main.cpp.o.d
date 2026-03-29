@@ -1,7 +1,7 @@
 CMakeFiles/LatticeCryBenchmarking.dir/src/main.cpp.o: \
- /home/ziyidong/PQCProjects/LatticeCryBendmarking/src/main.cpp \
+ /home/ziyidong/PBCProjects/LatticeCryBendmarking/src/main.cpp \
  /usr/include/stdc-predef.h \
- /home/ziyidong/PQCProjects/LatticeCryBendmarking/src/../include/mp12.h \
+ /home/ziyidong/PBCProjects/LatticeCryBendmarking/src/../include/mp12.h \
  /usr/include/c++/13/cstdint \
  /usr/include/x86_64-linux-gnu/c++/13/bits/c++config.h \
  /usr/include/x86_64-linux-gnu/c++/13/bits/os_defines.h \
