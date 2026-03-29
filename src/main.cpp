@@ -196,7 +196,7 @@ int main() {
     std::cout << "╚══════════════════════════════════════════════════╝\n";
 
     // Parameters: n=512, q=134219777  security level: 128 bit
-    auto p = Params::make(256, 16411, 2);
+    auto p = Params::make(512, 134219777, 27);
     std::cout << "\nParameters:\n";
     std::cout << "  n = " << p.n << "  (lattice dimension)\n";
     std::cout << "  q = " << p.q << "  (modulus)\n";

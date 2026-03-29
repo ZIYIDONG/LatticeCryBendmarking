@@ -55,7 +55,7 @@
 				}
 			],
 			"type" : "INTERNAL",
-			"value" : "/home/ziyidong/PQCProjects/LatticeCryBendmarking/build"
+			"value" : "/home/ziyidong/PBCProjects/LatticeCryBendmarking/build"
 		},
 		{
 			"name" : "CMAKE_CACHE_MAJOR_VERSION",
@@ -155,11 +155,11 @@
 				},
 				{
 					"name" : "HELPSTRING",
-					"value" : "CXX compiler"
+					"value" : "No help, variable specified on the command line."
 				}
 			],
 			"type" : "FILEPATH",
-			"value" : "/usr/bin/c++"
+			"value" : "/usr/bin/g++"
 		},
 		{
 			"name" : "CMAKE_CXX_COMPILER_AR",
@@ -283,11 +283,11 @@
 				},
 				{
 					"name" : "HELPSTRING",
-					"value" : "C compiler"
+					"value" : "No help, variable specified on the command line."
 				}
 			],
 			"type" : "FILEPATH",
-			"value" : "/usr/bin/cc"
+			"value" : "/usr/bin/gcc"
 		},
 		{
 			"name" : "CMAKE_C_COMPILER_AR",
@@ -543,7 +543,7 @@
 				}
 			],
 			"type" : "STATIC",
-			"value" : "/home/ziyidong/PQCProjects/LatticeCryBendmarking/build/CMakeFiles/pkgRedirects"
+			"value" : "/home/ziyidong/PBCProjects/LatticeCryBendmarking/build/CMakeFiles/pkgRedirects"
 		},
 		{
 			"name" : "CMAKE_GENERATOR",
@@ -603,7 +603,7 @@
 				}
 			],
 			"type" : "INTERNAL",
-			"value" : "/home/ziyidong/PQCProjects/LatticeCryBendmarking"
+			"value" : "/home/ziyidong/PBCProjects/LatticeCryBendmarking"
 		},
 		{
 			"name" : "CMAKE_INSTALL_PREFIX",
@@ -1155,7 +1155,7 @@
 				}
 			],
 			"type" : "STATIC",
-			"value" : "/home/ziyidong/PQCProjects/LatticeCryBendmarking/build"
+			"value" : "/home/ziyidong/PBCProjects/LatticeCryBendmarking/build"
 		},
 		{
 			"name" : "LatticeCryBenchmarking_IS_TOP_LEVEL",
@@ -1179,7 +1179,7 @@
 				}
 			],
 			"type" : "STATIC",
-			"value" : "/home/ziyidong/PQCProjects/LatticeCryBendmarking"
+			"value" : "/home/ziyidong/PBCProjects/LatticeCryBendmarking"
 		},
 		{
 			"name" : "_CMAKE_LINKER_PUSHPOP_STATE_SUPPORTED",
