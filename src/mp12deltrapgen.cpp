@@ -9,8 +9,8 @@
  * 编译：g++ -O2 -std=c++17 -o del_demo main_del.cpp -lm
  */
 
-#include "mp12.h"
-#include "deltrapgen.h"
+#include "../include/mp12.h"
+#include "../include/mp12deltrapgen.h"
 #include <iostream>
 #include <iomanip>
 #include <cmath>
@@ -372,13 +372,13 @@ void test_ibe_simulation(const Params& p) {
 }
 
 /* ════════════════════ main ════════════════════════ */
-int main() {
+void run_del_tests(const mp12::Params& p) {
     std::cout << "╔══════════════════════════════════════════════╗\n";
     std::cout << "║   MP12 DelTrapGen — C/C++ 实现              ║\n";
     std::cout << "║   Tag委托 / SampleLeft / SampleRight         ║\n";
     std::cout << "╚══════════════════════════════════════════════╝\n";
 
-    auto p = Params::make(4, 97, 2);
+    //auto p = Params::make(4, 97, 2);
     std::cout << "\n参数: n=" << p.n << "  q=" << p.q << "  b=" << p.b
               << "  k=" << p.k << "  m=" << p.m << "  s=" << p.s << "\n";
 
@@ -421,5 +421,5 @@ int main() {
 )";
 
     std::cout << "\nDone.\n";
-    return 0;
+    //return 0;
 }

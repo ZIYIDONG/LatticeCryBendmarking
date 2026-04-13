@@ -7,12 +7,17 @@
  */
 
 #include "../include/mp12.h"
+#include "../include/mp12deltrapgen.h"
 #include <iostream>
 #include <iomanip>
 #include <cmath>
 #include <chrono>
 
+
+
 using namespace mp12;
+
+void run_del_tests(const mp12::Params& p);
 
 /* ─────────────── pretty-print helpers ──────────────── */
 static void print_vec(const char* label, const Vec& v, int maxshow = 8) {
@@ -196,7 +201,8 @@ int main() {
     std::cout << "╚══════════════════════════════════════════════════╝\n";
 
     // Parameters: n=512, q=134219777  security level: 128 bit
-    auto p = Params::make(512, 134219777, 27);
+    //auto p = Params::make(512, 134219777, 27);
+    auto p = Params::make(8, 257, 2);
     std::cout << "\nParameters:\n";
     std::cout << "  n = " << p.n << "  (lattice dimension)\n";
     std::cout << "  q = " << p.q << "  (modulus)\n";
@@ -226,6 +232,9 @@ int main() {
     bool ok2 = verify(p2, td2.A, x2, u2);
     std::cout << "  SamplePre correctness: " << (ok2 ? "PASS" : "FAIL") << "\n";
     std::cout << "  ||x|| = " << std::fixed << std::setprecision(1) << vec_norm(x2) << "\n";
+
+    // ── 委托相关测试（Test 7–11），复用同一套参数 p ──
+    run_del_tests(p);
 
     std::cout << "\nDone.\n";
     return 0;

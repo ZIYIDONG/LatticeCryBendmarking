@@ -1,8 +1,0 @@
-[
-{
-  "directory": "/home/ziyidong/PBCProjects/LatticeCryBendmarking/build",
-  "command": "/usr/bin/g++  -I/home/ziyidong/PBCProjects/LatticeCryBendmarking/include  -g -g -std=gnu++20 -o CMakeFiles/LatticeCryBenchmarking.dir/src/main.cpp.o -c /home/ziyidong/PBCProjects/LatticeCryBendmarking/src/main.cpp",
-  "file": "/home/ziyidong/PBCProjects/LatticeCryBendmarking/src/main.cpp",
-  "output": "CMakeFiles/LatticeCryBenchmarking.dir/src/main.cpp.o"
-}
-]

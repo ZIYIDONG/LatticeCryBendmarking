@@ -1,36 +1,31 @@
-#设置cmake版本
 cmake_minimum_required(VERSION 3.22)
-
-#项目名字
 project(LatticeCryBenchmarking)
 
-#设置编译版本
 set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O2")
 
-#声明头文件路径
 set(INC_DIR ${CMAKE_SOURCE_DIR}/include)
-#声明链接库路径
-set(LINK_DIR ${CMAKE_SOURCE_DIR}/lib)
 
+# ─── 辅助宏: 少写重复代码 ───
+function(add_demo name)
+    add_executable(${name} ${ARGN})
+    target_include_directories(${name} PRIVATE ${INC_DIR})
+endfunction()
 
-#编译文件
-add_executable(LatticeCryBenchmarking
-        ./src/main.cpp
+# ─── 主 MP12 程序 (包含 Test 1–11) ───
+add_demo(LatticeCryBenchmarking
+    src/main.cpp
+    src/mp12deltrapgen.cpp
 )
 
-# 添加头文件搜索路径
-target_include_directories(LatticeCryBenchmarking PRIVATE ${INC_DIR})
-# 添加库文件搜索路径
-target_link_directories(LatticeCryBenchmarking PRIVATE ${LINK_DIR})
+# ─── Powersof 系列 ───
+add_demo(test_powersof           src/test_powersof.cpp)
+add_demo(test_powersof_modswitch src/test_powersof_modswitch.cpp)
 
+# ─── FRD 系列 ───
+add_demo(test_frd  src/test_frd.cpp)
+add_demo(debug_frd src/debug_frd.cpp)
 
-# 链接库
-#target_link_libraries(LatticeCryBenchmarking PRIVATE
-#        pbc
-#        gmp
-#        ssl
-#        crypto
-#)
-
-#生成调试信息
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
+# ─── matops 基准测试 ───
+add_demo(bench_matops src/bench_matops.cpp)

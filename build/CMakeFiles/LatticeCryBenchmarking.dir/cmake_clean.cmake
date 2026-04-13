@@ -1,6 +1,8 @@
 file(REMOVE_RECURSE
   "CMakeFiles/LatticeCryBenchmarking.dir/src/main.cpp.o"
   "CMakeFiles/LatticeCryBenchmarking.dir/src/main.cpp.o.d"
+  "CMakeFiles/LatticeCryBenchmarking.dir/src/mp12deltrapgen.cpp.o"
+  "CMakeFiles/LatticeCryBenchmarking.dir/src/mp12deltrapgen.cpp.o.d"
   "LatticeCryBenchmarking"
   "LatticeCryBenchmarking.pdb"
 )

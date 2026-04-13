@@ -1,1 +1,1 @@
-/usr/bin/g++  -g -g CMakeFiles/LatticeCryBenchmarking.dir/src/main.cpp.o -o LatticeCryBenchmarking   -L/home/ziyidong/PBCProjects/LatticeCryBendmarking/lib 
+/usr/bin/c++  -g -O2 CMakeFiles/LatticeCryBenchmarking.dir/src/main.cpp.o CMakeFiles/LatticeCryBenchmarking.dir/src/mp12deltrapgen.cpp.o -o LatticeCryBenchmarking 

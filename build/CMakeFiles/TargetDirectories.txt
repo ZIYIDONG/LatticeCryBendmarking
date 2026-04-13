@@ -1,3 +1,8 @@
-/home/ziyidong/PBCProjects/LatticeCryBendmarking/build/CMakeFiles/LatticeCryBenchmarking.dir
-/home/ziyidong/PBCProjects/LatticeCryBendmarking/build/CMakeFiles/edit_cache.dir
-/home/ziyidong/PBCProjects/LatticeCryBendmarking/build/CMakeFiles/rebuild_cache.dir
+/home/ziyidong/PQCProjects/LatticeCryBendmarking/build/CMakeFiles/LatticeCryBenchmarking.dir
+/home/ziyidong/PQCProjects/LatticeCryBendmarking/build/CMakeFiles/test_powersof.dir
+/home/ziyidong/PQCProjects/LatticeCryBendmarking/build/CMakeFiles/test_powersof_modswitch.dir
+/home/ziyidong/PQCProjects/LatticeCryBendmarking/build/CMakeFiles/test_frd.dir
+/home/ziyidong/PQCProjects/LatticeCryBendmarking/build/CMakeFiles/debug_frd.dir
+/home/ziyidong/PQCProjects/LatticeCryBendmarking/build/CMakeFiles/bench_matops.dir
+/home/ziyidong/PQCProjects/LatticeCryBendmarking/build/CMakeFiles/edit_cache.dir
+/home/ziyidong/PQCProjects/LatticeCryBendmarking/build/CMakeFiles/rebuild_cache.dir

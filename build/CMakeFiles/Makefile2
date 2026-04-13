@@ -54,16 +54,21 @@ RM = /usr/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/ziyidong/PBCProjects/LatticeCryBendmarking
+CMAKE_SOURCE_DIR = /home/ziyidong/PQCProjects/LatticeCryBendmarking
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/ziyidong/PBCProjects/LatticeCryBendmarking/build
+CMAKE_BINARY_DIR = /home/ziyidong/PQCProjects/LatticeCryBendmarking/build
 
 #=============================================================================
 # Directory level rules for the build root directory
 
 # The main recursive "all" target.
 all: CMakeFiles/LatticeCryBenchmarking.dir/all
+all: CMakeFiles/test_powersof.dir/all
+all: CMakeFiles/test_powersof_modswitch.dir/all
+all: CMakeFiles/test_frd.dir/all
+all: CMakeFiles/debug_frd.dir/all
+all: CMakeFiles/bench_matops.dir/all
 .PHONY : all
 
 # The main recursive "preinstall" target.
@@ -72,6 +77,11 @@ preinstall:
 
 # The main recursive "clean" target.
 clean: CMakeFiles/LatticeCryBenchmarking.dir/clean
+clean: CMakeFiles/test_powersof.dir/clean
+clean: CMakeFiles/test_powersof_modswitch.dir/clean
+clean: CMakeFiles/test_frd.dir/clean
+clean: CMakeFiles/debug_frd.dir/clean
+clean: CMakeFiles/bench_matops.dir/clean
 .PHONY : clean
 
 #=============================================================================
@@ -81,14 +91,14 @@ clean: CMakeFiles/LatticeCryBenchmarking.dir/clean
 CMakeFiles/LatticeCryBenchmarking.dir/all:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/LatticeCryBenchmarking.dir/build.make CMakeFiles/LatticeCryBenchmarking.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/LatticeCryBenchmarking.dir/build.make CMakeFiles/LatticeCryBenchmarking.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/ziyidong/PBCProjects/LatticeCryBendmarking/build/CMakeFiles --progress-num=1,2 "Built target LatticeCryBenchmarking"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/ziyidong/PQCProjects/LatticeCryBendmarking/build/CMakeFiles --progress-num=1,2,3 "Built target LatticeCryBenchmarking"
 .PHONY : CMakeFiles/LatticeCryBenchmarking.dir/all
 
 # Build rule for subdir invocation for target.
 CMakeFiles/LatticeCryBenchmarking.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/ziyidong/PBCProjects/LatticeCryBendmarking/build/CMakeFiles 2
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/ziyidong/PQCProjects/LatticeCryBendmarking/build/CMakeFiles 3
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/LatticeCryBenchmarking.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/ziyidong/PBCProjects/LatticeCryBendmarking/build/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/ziyidong/PQCProjects/LatticeCryBendmarking/build/CMakeFiles 0
 .PHONY : CMakeFiles/LatticeCryBenchmarking.dir/rule
 
 # Convenience name for target.
@@ -99,6 +109,136 @@ LatticeCryBenchmarking: CMakeFiles/LatticeCryBenchmarking.dir/rule
 CMakeFiles/LatticeCryBenchmarking.dir/clean:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/LatticeCryBenchmarking.dir/build.make CMakeFiles/LatticeCryBenchmarking.dir/clean
 .PHONY : CMakeFiles/LatticeCryBenchmarking.dir/clean
+
+#=============================================================================
+# Target rules for target CMakeFiles/test_powersof.dir
+
+# All Build rule for target.
+CMakeFiles/test_powersof.dir/all:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_powersof.dir/build.make CMakeFiles/test_powersof.dir/depend
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_powersof.dir/build.make CMakeFiles/test_powersof.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/ziyidong/PQCProjects/LatticeCryBendmarking/build/CMakeFiles --progress-num=10,11 "Built target test_powersof"
+.PHONY : CMakeFiles/test_powersof.dir/all
+
+# Build rule for subdir invocation for target.
+CMakeFiles/test_powersof.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/ziyidong/PQCProjects/LatticeCryBendmarking/build/CMakeFiles 2
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/test_powersof.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/ziyidong/PQCProjects/LatticeCryBendmarking/build/CMakeFiles 0
+.PHONY : CMakeFiles/test_powersof.dir/rule
+
+# Convenience name for target.
+test_powersof: CMakeFiles/test_powersof.dir/rule
+.PHONY : test_powersof
+
+# clean rule for target.
+CMakeFiles/test_powersof.dir/clean:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_powersof.dir/build.make CMakeFiles/test_powersof.dir/clean
+.PHONY : CMakeFiles/test_powersof.dir/clean
+
+#=============================================================================
+# Target rules for target CMakeFiles/test_powersof_modswitch.dir
+
+# All Build rule for target.
+CMakeFiles/test_powersof_modswitch.dir/all:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_powersof_modswitch.dir/build.make CMakeFiles/test_powersof_modswitch.dir/depend
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_powersof_modswitch.dir/build.make CMakeFiles/test_powersof_modswitch.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/ziyidong/PQCProjects/LatticeCryBendmarking/build/CMakeFiles --progress-num=12,13 "Built target test_powersof_modswitch"
+.PHONY : CMakeFiles/test_powersof_modswitch.dir/all
+
+# Build rule for subdir invocation for target.
+CMakeFiles/test_powersof_modswitch.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/ziyidong/PQCProjects/LatticeCryBendmarking/build/CMakeFiles 2
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/test_powersof_modswitch.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/ziyidong/PQCProjects/LatticeCryBendmarking/build/CMakeFiles 0
+.PHONY : CMakeFiles/test_powersof_modswitch.dir/rule
+
+# Convenience name for target.
+test_powersof_modswitch: CMakeFiles/test_powersof_modswitch.dir/rule
+.PHONY : test_powersof_modswitch
+
+# clean rule for target.
+CMakeFiles/test_powersof_modswitch.dir/clean:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_powersof_modswitch.dir/build.make CMakeFiles/test_powersof_modswitch.dir/clean
+.PHONY : CMakeFiles/test_powersof_modswitch.dir/clean
+
+#=============================================================================
+# Target rules for target CMakeFiles/test_frd.dir
+
+# All Build rule for target.
+CMakeFiles/test_frd.dir/all:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_frd.dir/build.make CMakeFiles/test_frd.dir/depend
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_frd.dir/build.make CMakeFiles/test_frd.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/ziyidong/PQCProjects/LatticeCryBendmarking/build/CMakeFiles --progress-num=8,9 "Built target test_frd"
+.PHONY : CMakeFiles/test_frd.dir/all
+
+# Build rule for subdir invocation for target.
+CMakeFiles/test_frd.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/ziyidong/PQCProjects/LatticeCryBendmarking/build/CMakeFiles 2
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/test_frd.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/ziyidong/PQCProjects/LatticeCryBendmarking/build/CMakeFiles 0
+.PHONY : CMakeFiles/test_frd.dir/rule
+
+# Convenience name for target.
+test_frd: CMakeFiles/test_frd.dir/rule
+.PHONY : test_frd
+
+# clean rule for target.
+CMakeFiles/test_frd.dir/clean:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_frd.dir/build.make CMakeFiles/test_frd.dir/clean
+.PHONY : CMakeFiles/test_frd.dir/clean
+
+#=============================================================================
+# Target rules for target CMakeFiles/debug_frd.dir
+
+# All Build rule for target.
+CMakeFiles/debug_frd.dir/all:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/debug_frd.dir/build.make CMakeFiles/debug_frd.dir/depend
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/debug_frd.dir/build.make CMakeFiles/debug_frd.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/ziyidong/PQCProjects/LatticeCryBendmarking/build/CMakeFiles --progress-num=6,7 "Built target debug_frd"
+.PHONY : CMakeFiles/debug_frd.dir/all
+
+# Build rule for subdir invocation for target.
+CMakeFiles/debug_frd.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/ziyidong/PQCProjects/LatticeCryBendmarking/build/CMakeFiles 2
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/debug_frd.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/ziyidong/PQCProjects/LatticeCryBendmarking/build/CMakeFiles 0
+.PHONY : CMakeFiles/debug_frd.dir/rule
+
+# Convenience name for target.
+debug_frd: CMakeFiles/debug_frd.dir/rule
+.PHONY : debug_frd
+
+# clean rule for target.
+CMakeFiles/debug_frd.dir/clean:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/debug_frd.dir/build.make CMakeFiles/debug_frd.dir/clean
+.PHONY : CMakeFiles/debug_frd.dir/clean
+
+#=============================================================================
+# Target rules for target CMakeFiles/bench_matops.dir
+
+# All Build rule for target.
+CMakeFiles/bench_matops.dir/all:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/bench_matops.dir/build.make CMakeFiles/bench_matops.dir/depend
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/bench_matops.dir/build.make CMakeFiles/bench_matops.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/ziyidong/PQCProjects/LatticeCryBendmarking/build/CMakeFiles --progress-num=4,5 "Built target bench_matops"
+.PHONY : CMakeFiles/bench_matops.dir/all
+
+# Build rule for subdir invocation for target.
+CMakeFiles/bench_matops.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/ziyidong/PQCProjects/LatticeCryBendmarking/build/CMakeFiles 2
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/bench_matops.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/ziyidong/PQCProjects/LatticeCryBendmarking/build/CMakeFiles 0
+.PHONY : CMakeFiles/bench_matops.dir/rule
+
+# Convenience name for target.
+bench_matops: CMakeFiles/bench_matops.dir/rule
+.PHONY : bench_matops
+
+# clean rule for target.
+CMakeFiles/bench_matops.dir/clean:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/bench_matops.dir/build.make CMakeFiles/bench_matops.dir/clean
+.PHONY : CMakeFiles/bench_matops.dir/clean
 
 #=============================================================================
 # Special targets to cleanup operation of make.

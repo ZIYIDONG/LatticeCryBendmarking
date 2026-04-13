@@ -57,10 +57,10 @@ RM = /usr/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/ziyidong/PBCProjects/LatticeCryBendmarking
+CMAKE_SOURCE_DIR = /home/ziyidong/PQCProjects/LatticeCryBendmarking
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/ziyidong/PBCProjects/LatticeCryBendmarking/build
+CMAKE_BINARY_DIR = /home/ziyidong/PQCProjects/LatticeCryBendmarking/build
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -87,9 +87,9 @@ rebuild_cache/fast: rebuild_cache
 
 # The main all target
 all: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/ziyidong/PBCProjects/LatticeCryBendmarking/build/CMakeFiles /home/ziyidong/PBCProjects/LatticeCryBendmarking/build//CMakeFiles/progress.marks
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/ziyidong/PQCProjects/LatticeCryBendmarking/build/CMakeFiles /home/ziyidong/PQCProjects/LatticeCryBendmarking/build//CMakeFiles/progress.marks
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/ziyidong/PBCProjects/LatticeCryBendmarking/build/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/ziyidong/PQCProjects/LatticeCryBendmarking/build/CMakeFiles 0
 .PHONY : all
 
 # The main clean target
@@ -129,6 +129,119 @@ LatticeCryBenchmarking/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/LatticeCryBenchmarking.dir/build.make CMakeFiles/LatticeCryBenchmarking.dir/build
 .PHONY : LatticeCryBenchmarking/fast
 
+#=============================================================================
+# Target rules for targets named test_powersof
+
+# Build rule for target.
+test_powersof: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_powersof
+.PHONY : test_powersof
+
+# fast build rule for target.
+test_powersof/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_powersof.dir/build.make CMakeFiles/test_powersof.dir/build
+.PHONY : test_powersof/fast
+
+#=============================================================================
+# Target rules for targets named test_powersof_modswitch
+
+# Build rule for target.
+test_powersof_modswitch: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_powersof_modswitch
+.PHONY : test_powersof_modswitch
+
+# fast build rule for target.
+test_powersof_modswitch/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_powersof_modswitch.dir/build.make CMakeFiles/test_powersof_modswitch.dir/build
+.PHONY : test_powersof_modswitch/fast
+
+#=============================================================================
+# Target rules for targets named test_frd
+
+# Build rule for target.
+test_frd: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_frd
+.PHONY : test_frd
+
+# fast build rule for target.
+test_frd/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_frd.dir/build.make CMakeFiles/test_frd.dir/build
+.PHONY : test_frd/fast
+
+#=============================================================================
+# Target rules for targets named debug_frd
+
+# Build rule for target.
+debug_frd: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 debug_frd
+.PHONY : debug_frd
+
+# fast build rule for target.
+debug_frd/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/debug_frd.dir/build.make CMakeFiles/debug_frd.dir/build
+.PHONY : debug_frd/fast
+
+#=============================================================================
+# Target rules for targets named bench_matops
+
+# Build rule for target.
+bench_matops: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 bench_matops
+.PHONY : bench_matops
+
+# fast build rule for target.
+bench_matops/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/bench_matops.dir/build.make CMakeFiles/bench_matops.dir/build
+.PHONY : bench_matops/fast
+
+src/bench_matops.o: src/bench_matops.cpp.o
+.PHONY : src/bench_matops.o
+
+# target to build an object file
+src/bench_matops.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/bench_matops.dir/build.make CMakeFiles/bench_matops.dir/src/bench_matops.cpp.o
+.PHONY : src/bench_matops.cpp.o
+
+src/bench_matops.i: src/bench_matops.cpp.i
+.PHONY : src/bench_matops.i
+
+# target to preprocess a source file
+src/bench_matops.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/bench_matops.dir/build.make CMakeFiles/bench_matops.dir/src/bench_matops.cpp.i
+.PHONY : src/bench_matops.cpp.i
+
+src/bench_matops.s: src/bench_matops.cpp.s
+.PHONY : src/bench_matops.s
+
+# target to generate assembly for a file
+src/bench_matops.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/bench_matops.dir/build.make CMakeFiles/bench_matops.dir/src/bench_matops.cpp.s
+.PHONY : src/bench_matops.cpp.s
+
+src/debug_frd.o: src/debug_frd.cpp.o
+.PHONY : src/debug_frd.o
+
+# target to build an object file
+src/debug_frd.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/debug_frd.dir/build.make CMakeFiles/debug_frd.dir/src/debug_frd.cpp.o
+.PHONY : src/debug_frd.cpp.o
+
+src/debug_frd.i: src/debug_frd.cpp.i
+.PHONY : src/debug_frd.i
+
+# target to preprocess a source file
+src/debug_frd.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/debug_frd.dir/build.make CMakeFiles/debug_frd.dir/src/debug_frd.cpp.i
+.PHONY : src/debug_frd.cpp.i
+
+src/debug_frd.s: src/debug_frd.cpp.s
+.PHONY : src/debug_frd.s
+
+# target to generate assembly for a file
+src/debug_frd.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/debug_frd.dir/build.make CMakeFiles/debug_frd.dir/src/debug_frd.cpp.s
+.PHONY : src/debug_frd.cpp.s
+
 src/main.o: src/main.cpp.o
 .PHONY : src/main.o
 
@@ -153,6 +266,102 @@ src/main.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/LatticeCryBenchmarking.dir/build.make CMakeFiles/LatticeCryBenchmarking.dir/src/main.cpp.s
 .PHONY : src/main.cpp.s
 
+src/mp12deltrapgen.o: src/mp12deltrapgen.cpp.o
+.PHONY : src/mp12deltrapgen.o
+
+# target to build an object file
+src/mp12deltrapgen.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/LatticeCryBenchmarking.dir/build.make CMakeFiles/LatticeCryBenchmarking.dir/src/mp12deltrapgen.cpp.o
+.PHONY : src/mp12deltrapgen.cpp.o
+
+src/mp12deltrapgen.i: src/mp12deltrapgen.cpp.i
+.PHONY : src/mp12deltrapgen.i
+
+# target to preprocess a source file
+src/mp12deltrapgen.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/LatticeCryBenchmarking.dir/build.make CMakeFiles/LatticeCryBenchmarking.dir/src/mp12deltrapgen.cpp.i
+.PHONY : src/mp12deltrapgen.cpp.i
+
+src/mp12deltrapgen.s: src/mp12deltrapgen.cpp.s
+.PHONY : src/mp12deltrapgen.s
+
+# target to generate assembly for a file
+src/mp12deltrapgen.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/LatticeCryBenchmarking.dir/build.make CMakeFiles/LatticeCryBenchmarking.dir/src/mp12deltrapgen.cpp.s
+.PHONY : src/mp12deltrapgen.cpp.s
+
+src/test_frd.o: src/test_frd.cpp.o
+.PHONY : src/test_frd.o
+
+# target to build an object file
+src/test_frd.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_frd.dir/build.make CMakeFiles/test_frd.dir/src/test_frd.cpp.o
+.PHONY : src/test_frd.cpp.o
+
+src/test_frd.i: src/test_frd.cpp.i
+.PHONY : src/test_frd.i
+
+# target to preprocess a source file
+src/test_frd.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_frd.dir/build.make CMakeFiles/test_frd.dir/src/test_frd.cpp.i
+.PHONY : src/test_frd.cpp.i
+
+src/test_frd.s: src/test_frd.cpp.s
+.PHONY : src/test_frd.s
+
+# target to generate assembly for a file
+src/test_frd.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_frd.dir/build.make CMakeFiles/test_frd.dir/src/test_frd.cpp.s
+.PHONY : src/test_frd.cpp.s
+
+src/test_powersof.o: src/test_powersof.cpp.o
+.PHONY : src/test_powersof.o
+
+# target to build an object file
+src/test_powersof.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_powersof.dir/build.make CMakeFiles/test_powersof.dir/src/test_powersof.cpp.o
+.PHONY : src/test_powersof.cpp.o
+
+src/test_powersof.i: src/test_powersof.cpp.i
+.PHONY : src/test_powersof.i
+
+# target to preprocess a source file
+src/test_powersof.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_powersof.dir/build.make CMakeFiles/test_powersof.dir/src/test_powersof.cpp.i
+.PHONY : src/test_powersof.cpp.i
+
+src/test_powersof.s: src/test_powersof.cpp.s
+.PHONY : src/test_powersof.s
+
+# target to generate assembly for a file
+src/test_powersof.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_powersof.dir/build.make CMakeFiles/test_powersof.dir/src/test_powersof.cpp.s
+.PHONY : src/test_powersof.cpp.s
+
+src/test_powersof_modswitch.o: src/test_powersof_modswitch.cpp.o
+.PHONY : src/test_powersof_modswitch.o
+
+# target to build an object file
+src/test_powersof_modswitch.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_powersof_modswitch.dir/build.make CMakeFiles/test_powersof_modswitch.dir/src/test_powersof_modswitch.cpp.o
+.PHONY : src/test_powersof_modswitch.cpp.o
+
+src/test_powersof_modswitch.i: src/test_powersof_modswitch.cpp.i
+.PHONY : src/test_powersof_modswitch.i
+
+# target to preprocess a source file
+src/test_powersof_modswitch.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_powersof_modswitch.dir/build.make CMakeFiles/test_powersof_modswitch.dir/src/test_powersof_modswitch.cpp.i
+.PHONY : src/test_powersof_modswitch.cpp.i
+
+src/test_powersof_modswitch.s: src/test_powersof_modswitch.cpp.s
+.PHONY : src/test_powersof_modswitch.s
+
+# target to generate assembly for a file
+src/test_powersof_modswitch.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_powersof_modswitch.dir/build.make CMakeFiles/test_powersof_modswitch.dir/src/test_powersof_modswitch.cpp.s
+.PHONY : src/test_powersof_modswitch.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -162,9 +371,32 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... LatticeCryBenchmarking"
+	@echo "... bench_matops"
+	@echo "... debug_frd"
+	@echo "... test_frd"
+	@echo "... test_powersof"
+	@echo "... test_powersof_modswitch"
+	@echo "... src/bench_matops.o"
+	@echo "... src/bench_matops.i"
+	@echo "... src/bench_matops.s"
+	@echo "... src/debug_frd.o"
+	@echo "... src/debug_frd.i"
+	@echo "... src/debug_frd.s"
 	@echo "... src/main.o"
 	@echo "... src/main.i"
 	@echo "... src/main.s"
+	@echo "... src/mp12deltrapgen.o"
+	@echo "... src/mp12deltrapgen.i"
+	@echo "... src/mp12deltrapgen.s"
+	@echo "... src/test_frd.o"
+	@echo "... src/test_frd.i"
+	@echo "... src/test_frd.s"
+	@echo "... src/test_powersof.o"
+	@echo "... src/test_powersof.i"
+	@echo "... src/test_powersof.s"
+	@echo "... src/test_powersof_modswitch.o"
+	@echo "... src/test_powersof_modswitch.i"
+	@echo "... src/test_powersof_modswitch.s"
 .PHONY : help
 
 
