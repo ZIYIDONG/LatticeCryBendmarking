@@ -1,1 +1,1 @@
-/usr/bin/c++  -g -O2 CMakeFiles/test_powersof.dir/src/test_powersof.cpp.o -o test_powersof 
+/usr/bin/c++  -g -O2 -g CMakeFiles/test_powersof.dir/src/test_powersof.cpp.o -o test_powersof 

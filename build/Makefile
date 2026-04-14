@@ -194,6 +194,82 @@ bench_matops/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/bench_matops.dir/build.make CMakeFiles/bench_matops.dir/build
 .PHONY : bench_matops/fast
 
+#=============================================================================
+# Target rules for targets named test_expand
+
+# Build rule for target.
+test_expand: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_expand
+.PHONY : test_expand
+
+# fast build rule for target.
+test_expand/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_expand.dir/build.make CMakeFiles/test_expand.dir/build
+.PHONY : test_expand/fast
+
+#=============================================================================
+# Target rules for targets named test_eval
+
+# Build rule for target.
+test_eval: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_eval
+.PHONY : test_eval
+
+# fast build rule for target.
+test_eval/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_eval.dir/build.make CMakeFiles/test_eval.dir/build
+.PHONY : test_eval/fast
+
+#=============================================================================
+# Target rules for targets named test_decrypt
+
+# Build rule for target.
+test_decrypt: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_decrypt
+.PHONY : test_decrypt
+
+# fast build rule for target.
+test_decrypt/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_decrypt.dir/build.make CMakeFiles/test_decrypt.dir/build
+.PHONY : test_decrypt/fast
+
+#=============================================================================
+# Target rules for targets named bench_decrypt
+
+# Build rule for target.
+bench_decrypt: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 bench_decrypt
+.PHONY : bench_decrypt
+
+# fast build rule for target.
+bench_decrypt/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/bench_decrypt.dir/build.make CMakeFiles/bench_decrypt.dir/build
+.PHONY : bench_decrypt/fast
+
+src/bench_decrypt.o: src/bench_decrypt.cpp.o
+.PHONY : src/bench_decrypt.o
+
+# target to build an object file
+src/bench_decrypt.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/bench_decrypt.dir/build.make CMakeFiles/bench_decrypt.dir/src/bench_decrypt.cpp.o
+.PHONY : src/bench_decrypt.cpp.o
+
+src/bench_decrypt.i: src/bench_decrypt.cpp.i
+.PHONY : src/bench_decrypt.i
+
+# target to preprocess a source file
+src/bench_decrypt.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/bench_decrypt.dir/build.make CMakeFiles/bench_decrypt.dir/src/bench_decrypt.cpp.i
+.PHONY : src/bench_decrypt.cpp.i
+
+src/bench_decrypt.s: src/bench_decrypt.cpp.s
+.PHONY : src/bench_decrypt.s
+
+# target to generate assembly for a file
+src/bench_decrypt.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/bench_decrypt.dir/build.make CMakeFiles/bench_decrypt.dir/src/bench_decrypt.cpp.s
+.PHONY : src/bench_decrypt.cpp.s
+
 src/bench_matops.o: src/bench_matops.cpp.o
 .PHONY : src/bench_matops.o
 
@@ -290,6 +366,78 @@ src/mp12deltrapgen.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/LatticeCryBenchmarking.dir/build.make CMakeFiles/LatticeCryBenchmarking.dir/src/mp12deltrapgen.cpp.s
 .PHONY : src/mp12deltrapgen.cpp.s
 
+src/test_decrypt.o: src/test_decrypt.cpp.o
+.PHONY : src/test_decrypt.o
+
+# target to build an object file
+src/test_decrypt.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_decrypt.dir/build.make CMakeFiles/test_decrypt.dir/src/test_decrypt.cpp.o
+.PHONY : src/test_decrypt.cpp.o
+
+src/test_decrypt.i: src/test_decrypt.cpp.i
+.PHONY : src/test_decrypt.i
+
+# target to preprocess a source file
+src/test_decrypt.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_decrypt.dir/build.make CMakeFiles/test_decrypt.dir/src/test_decrypt.cpp.i
+.PHONY : src/test_decrypt.cpp.i
+
+src/test_decrypt.s: src/test_decrypt.cpp.s
+.PHONY : src/test_decrypt.s
+
+# target to generate assembly for a file
+src/test_decrypt.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_decrypt.dir/build.make CMakeFiles/test_decrypt.dir/src/test_decrypt.cpp.s
+.PHONY : src/test_decrypt.cpp.s
+
+src/test_eval.o: src/test_eval.cpp.o
+.PHONY : src/test_eval.o
+
+# target to build an object file
+src/test_eval.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_eval.dir/build.make CMakeFiles/test_eval.dir/src/test_eval.cpp.o
+.PHONY : src/test_eval.cpp.o
+
+src/test_eval.i: src/test_eval.cpp.i
+.PHONY : src/test_eval.i
+
+# target to preprocess a source file
+src/test_eval.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_eval.dir/build.make CMakeFiles/test_eval.dir/src/test_eval.cpp.i
+.PHONY : src/test_eval.cpp.i
+
+src/test_eval.s: src/test_eval.cpp.s
+.PHONY : src/test_eval.s
+
+# target to generate assembly for a file
+src/test_eval.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_eval.dir/build.make CMakeFiles/test_eval.dir/src/test_eval.cpp.s
+.PHONY : src/test_eval.cpp.s
+
+src/test_expand.o: src/test_expand.cpp.o
+.PHONY : src/test_expand.o
+
+# target to build an object file
+src/test_expand.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_expand.dir/build.make CMakeFiles/test_expand.dir/src/test_expand.cpp.o
+.PHONY : src/test_expand.cpp.o
+
+src/test_expand.i: src/test_expand.cpp.i
+.PHONY : src/test_expand.i
+
+# target to preprocess a source file
+src/test_expand.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_expand.dir/build.make CMakeFiles/test_expand.dir/src/test_expand.cpp.i
+.PHONY : src/test_expand.cpp.i
+
+src/test_expand.s: src/test_expand.cpp.s
+.PHONY : src/test_expand.s
+
+# target to generate assembly for a file
+src/test_expand.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_expand.dir/build.make CMakeFiles/test_expand.dir/src/test_expand.cpp.s
+.PHONY : src/test_expand.cpp.s
+
 src/test_frd.o: src/test_frd.cpp.o
 .PHONY : src/test_frd.o
 
@@ -371,11 +519,18 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... LatticeCryBenchmarking"
+	@echo "... bench_decrypt"
 	@echo "... bench_matops"
 	@echo "... debug_frd"
+	@echo "... test_decrypt"
+	@echo "... test_eval"
+	@echo "... test_expand"
 	@echo "... test_frd"
 	@echo "... test_powersof"
 	@echo "... test_powersof_modswitch"
+	@echo "... src/bench_decrypt.o"
+	@echo "... src/bench_decrypt.i"
+	@echo "... src/bench_decrypt.s"
 	@echo "... src/bench_matops.o"
 	@echo "... src/bench_matops.i"
 	@echo "... src/bench_matops.s"
@@ -388,6 +543,15 @@ help:
 	@echo "... src/mp12deltrapgen.o"
 	@echo "... src/mp12deltrapgen.i"
 	@echo "... src/mp12deltrapgen.s"
+	@echo "... src/test_decrypt.o"
+	@echo "... src/test_decrypt.i"
+	@echo "... src/test_decrypt.s"
+	@echo "... src/test_eval.o"
+	@echo "... src/test_eval.i"
+	@echo "... src/test_eval.s"
+	@echo "... src/test_expand.o"
+	@echo "... src/test_expand.i"
+	@echo "... src/test_expand.s"
 	@echo "... src/test_frd.o"
 	@echo "... src/test_frd.i"
 	@echo "... src/test_frd.s"

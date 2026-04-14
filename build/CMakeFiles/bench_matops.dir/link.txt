@@ -1,1 +1,1 @@
-/usr/bin/c++  -g -O2 CMakeFiles/bench_matops.dir/src/bench_matops.cpp.o -o bench_matops 
+/usr/bin/c++  -g -O2 -g CMakeFiles/bench_matops.dir/src/bench_matops.cpp.o -o bench_matops 

@@ -29,3 +29,13 @@ add_demo(debug_frd src/debug_frd.cpp)
 
 # ─── matops 基准测试 ───
 add_demo(bench_matops src/bench_matops.cpp)
+
+# ─── expand/extend 基准测试 ───
+add_demo(test_expand src/test_expand.cpp)
+
+# ─── eval 测试 ───
+add_demo(test_eval src/test_eval.cpp)
+
+# ─── 多身份 FHE 阈值解密 ───
+add_demo(test_decrypt  src/test_decrypt.cpp)
+add_demo(bench_decrypt src/bench_decrypt.cpp)
