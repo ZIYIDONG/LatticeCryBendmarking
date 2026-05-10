@@ -17,6 +17,7 @@
 #include "matops.h"
 #include "eval.h"
 #include "decrypt.h"
+#include "unified_params.h"
 #include <iostream>
 #include <iomanip>
 #include <random>
@@ -220,16 +221,10 @@ int main() {
     std::cout << "  使用: matops.h, eval.h (gadget_inverse, build_gadget)\n";
     std::cout << "==========================================================\n\n";
 
-    /* ─── 参数设置 ─── */
-    const int  n      = 2;       // 格维度
-    const int  d      = 1;       // 深度
-    const long q      = 1031;    // 模数 (素数)
-    const int  b      = 2;       // gadget 基
-    const int  N_id   = 3;       // 身份数量
-    const int  lambda = 4;       // 安全参数 (演示用, 实际需更大)
-    const int  B_chi  = 1;       // LWE 噪声界
-
-    MIDParams params = MIDParams::make(n, d, q, N_id, b, lambda, B_chi);
+    /* ─── 参数设置 (统一 128-bit) ─── */
+    const int d = 1;       // 深度
+    const int N_id = 3;    // 身份数量
+    auto params = unified::default_midparams_128(d, N_id);
 
     std::cout << "[参数]\n"
               << "  n     = " << params.n     << "\n"

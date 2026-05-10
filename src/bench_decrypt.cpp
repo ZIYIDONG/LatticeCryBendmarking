@@ -14,6 +14,7 @@
 #include "matops.h"
 #include "eval.h"
 #include "decrypt.h"
+#include "unified_params.h"
 
 #include <iostream>
 #include <iomanip>
@@ -543,11 +544,17 @@ int main()
     std::cout << "║  使用: matops.h, eval.h (gadget_inverse/build_gadget)║\n";
     std::cout << "╚══════════════════════════════════════════════════════╝\n";
 
-    /* 详细拆解 (默认参数) */
-    run_benchmark(/*n=*/2, /*d=*/1, /*q=*/65537, /*N=*/3, /*REPS=*/500);
+    /* 详细拆解 (统一 128-bit 参数) */
+    {
+        auto mp = unified::default_midparams_128(1, 3);
+        run_benchmark(mp.n, 1, mp.q, mp.N_id, 500);
+    }
 
-    /* 较大参数 */
-    run_benchmark(/*n=*/4, /*d=*/2, /*q=*/65537, /*N=*/5, /*REPS=*/100);
+    /* 较大参数 (仍使用统一 modulus q; 调整深度与身份数) */
+    {
+        auto mp2 = unified::default_midparams_128(2, 5);
+        run_benchmark(mp2.n, 2, mp2.q, mp2.N_id, 100);
+    }
 
     /* 缩放趋势对比 */
     scaling_test();

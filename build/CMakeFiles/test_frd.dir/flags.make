@@ -6,5 +6,5 @@ CXX_DEFINES =
 
 CXX_INCLUDES = -I/home/ziyidong/PQCProjects/LatticeCryBendmarking/include
 
-CXX_FLAGS =  -g -O2 -g -std=gnu++20
+CXX_FLAGS =  -g -O2 -std=gnu++20
 
