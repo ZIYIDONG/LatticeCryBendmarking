@@ -102,7 +102,9 @@ inline long smudging_bound(const MIDParams& p) {
     if (exponent > 40.0) exponent = 40.0;
     long bound = (long)std::pow(2.0, exponent) * p.B_chi;
     if (bound < 1) bound = 1;
-    if (bound > p.q / 4) bound = p.q / 4 - 1;   // 不超过 q/4
+    /* 保守限制: 避免掩蔽噪声接近判决阈值 q/4，从而破坏解密。
+       将上限设置为 q/8（更保守），确保掩蔽噪声远小于阈值。 */
+    if (bound > p.q / 8) bound = p.q / 8;
     return bound;
 }
 

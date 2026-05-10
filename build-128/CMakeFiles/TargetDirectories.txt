@@ -1,0 +1,12 @@
+/home/ziyidong/PQCProjects/LatticeCryBendmarking/build-128/CMakeFiles/LatticeCryBenchmarking.dir
+/home/ziyidong/PQCProjects/LatticeCryBendmarking/build-128/CMakeFiles/test_powersof.dir
+/home/ziyidong/PQCProjects/LatticeCryBendmarking/build-128/CMakeFiles/test_powersof_modswitch.dir
+/home/ziyidong/PQCProjects/LatticeCryBendmarking/build-128/CMakeFiles/test_frd.dir
+/home/ziyidong/PQCProjects/LatticeCryBendmarking/build-128/CMakeFiles/debug_frd.dir
+/home/ziyidong/PQCProjects/LatticeCryBendmarking/build-128/CMakeFiles/bench_matops.dir
+/home/ziyidong/PQCProjects/LatticeCryBendmarking/build-128/CMakeFiles/test_expand.dir
+/home/ziyidong/PQCProjects/LatticeCryBendmarking/build-128/CMakeFiles/test_eval.dir
+/home/ziyidong/PQCProjects/LatticeCryBendmarking/build-128/CMakeFiles/test_decrypt.dir
+/home/ziyidong/PQCProjects/LatticeCryBendmarking/build-128/CMakeFiles/bench_decrypt.dir
+/home/ziyidong/PQCProjects/LatticeCryBendmarking/build-128/CMakeFiles/edit_cache.dir
+/home/ziyidong/PQCProjects/LatticeCryBendmarking/build-128/CMakeFiles/rebuild_cache.dir

@@ -1,5 +1,6 @@
 #include "../include/eval.h"
 #include "../include/matops.h"
+#include "../include/unified_params.h"
 #include <iostream>
 #include <random>
 
@@ -34,8 +35,9 @@ static Mat scalar_mul(long s, const Mat& A, long q) {
 }
 
 int main() {
-    const long q = 257;
-    const int  b = 2;
+    auto mp = unified::default_mp12_params_128();
+    const long q = mp.q;
+    const int  b = mp.b;
     const int  k = eval_compute_k(q, b);
     const size_t r = 6;            // "行维度"
     const size_t c = r * k;        // 必须 = r·k 才能乘

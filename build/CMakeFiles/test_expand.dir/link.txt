@@ -1,1 +1,1 @@
-/usr/bin/c++  -g -O2 CMakeFiles/test_expand.dir/src/test_expand.cpp.o -o test_expand 
+/usr/bin/c++  -g -O2 -g CMakeFiles/test_expand.dir/src/test_expand.cpp.o -o test_expand 

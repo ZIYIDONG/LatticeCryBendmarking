@@ -175,7 +175,7 @@ static void print_table(const std::string& title,
    ══════════════════════════════════════════════════ */
 static void run_benchmark(int n, int d, long q, int N_id, int REPS)
 {
-    const int b     = 2;
+    const int b     = unified::default_midparams_128(d, N_id).b;
     const int B_chi = 1;
 
     MIDParams params = MIDParams::make(n, d, q, N_id, b, /*lambda=*/4, B_chi);
@@ -467,7 +467,7 @@ static void scaling_test()
     };
 
     const int REPS = 200;
-    const int b = 2;
+    const int b = unified::default_mp12_params_128().b;
 
     for (auto& cfg : configs) {
         MIDParams p = MIDParams::make(cfg.n, cfg.d, cfg.q, cfg.N, b, 4, 1);

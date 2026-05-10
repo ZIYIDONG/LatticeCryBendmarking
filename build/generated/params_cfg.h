@@ -1,0 +1,12 @@
+/* Auto-generated parameter overrides (configure with CMake)
+ * If UNIFIED_PARAMS is ON, CMake will create params_cfg.h in the build tree
+ * and the code will pick up these macros.
+ */
+
+#define UNIFIED_PARAMS_ENABLED 1
+#define MP12_N 512
+#define MP12_Q 134219777
+#define MP12_B 27
+#define MID_LAMBDA 128
+#define MID_N_ID 3
+#define MID_D 1

@@ -1,0 +1,141 @@
+{
+	"configurations" : 
+	[
+		{
+			"directories" : 
+			[
+				{
+					"build" : ".",
+					"jsonFile" : "directory-.-Debug-f5ebdc15457944623624.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.22"
+					},
+					"projectIndex" : 0,
+					"source" : ".",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3,
+						4,
+						5,
+						6,
+						7,
+						8,
+						9
+					]
+				}
+			],
+			"name" : "Debug",
+			"projects" : 
+			[
+				{
+					"directoryIndexes" : 
+					[
+						0
+					],
+					"name" : "LatticeCryBenchmarking",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3,
+						4,
+						5,
+						6,
+						7,
+						8,
+						9
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 0,
+					"id" : "LatticeCryBenchmarking::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-LatticeCryBenchmarking-Debug-dc7cbc91cfeeacfe9a5a.json",
+					"name" : "LatticeCryBenchmarking",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "bench_decrypt::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-bench_decrypt-Debug-eabdf9b60eafda11452a.json",
+					"name" : "bench_decrypt",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "bench_matops::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-bench_matops-Debug-3adbebc94539602fe40d.json",
+					"name" : "bench_matops",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "debug_frd::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-debug_frd-Debug-829551677bdcafc054a9.json",
+					"name" : "debug_frd",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "test_decrypt::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-test_decrypt-Debug-c617c2eb1e20ee1f69eb.json",
+					"name" : "test_decrypt",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "test_eval::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-test_eval-Debug-5c828eb51112f712d834.json",
+					"name" : "test_eval",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "test_expand::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-test_expand-Debug-b40c866dc93a793c62e8.json",
+					"name" : "test_expand",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "test_frd::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-test_frd-Debug-4b8ef81457aafbbc2bbd.json",
+					"name" : "test_frd",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "test_powersof::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-test_powersof-Debug-c4962950a2565d552943.json",
+					"name" : "test_powersof",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "test_powersof_modswitch::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-test_powersof_modswitch-Debug-0f494d041baa49d9abee.json",
+					"name" : "test_powersof_modswitch",
+					"projectIndex" : 0
+				}
+			]
+		}
+	],
+	"kind" : "codemodel",
+	"paths" : 
+	{
+		"build" : "/home/ziyidong/PQCProjects/LatticeCryBendmarking/build",
+		"source" : "/home/ziyidong/PQCProjects/LatticeCryBendmarking"
+	},
+	"version" : 
+	{
+		"major" : 2,
+		"minor" : 6
+	}
+}

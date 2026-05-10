@@ -7,6 +7,25 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O2")
 
 set(INC_DIR ${CMAKE_SOURCE_DIR}/include)
 
+# Option: unified parameters
+option(UNIFIED_PARAMS "Use unified 128-bit parameters" ON)
+# Default unified parameter values (can be overridden via -D on cmake command line)
+set(MP12_N   512 CACHE STRING "MP12 n")
+set(MP12_Q   134219777 CACHE STRING "MP12 q")
+set(MP12_B   27 CACHE STRING "MP12 b")
+set(MID_LAMBDA 128 CACHE STRING "MID lambda")
+set(MID_N_ID   3 CACHE STRING "MID N_id")
+set(MID_D      1 CACHE STRING "MID d")
+
+# Configure params header into build directory when enabled
+if(UNIFIED_PARAMS)
+    set(UNIFIED_PARAMS_ENABLED 1)
+    configure_file(${CMAKE_SOURCE_DIR}/include/params_cfg.h.in ${CMAKE_BINARY_DIR}/generated/params_cfg.h @ONLY)
+    include_directories(${CMAKE_BINARY_DIR}/generated)
+else()
+    set(UNIFIED_PARAMS_ENABLED 0)
+endif()
+
 # ─── 辅助宏: 少写重复代码 ───
 function(add_demo name)
     add_executable(${name} ${ARGN})

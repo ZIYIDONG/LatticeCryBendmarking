@@ -1,1 +1,1 @@
-/usr/bin/c++  -g -O2 CMakeFiles/test_decrypt.dir/src/test_decrypt.cpp.o -o test_decrypt 
+/usr/bin/c++  -g -O2 -g CMakeFiles/test_decrypt.dir/src/test_decrypt.cpp.o -o test_decrypt 

@@ -1,6 +1,7 @@
 #include "../include/extend.h"
 #include "../include/expand.h"
 #include "../include/matops.h"
+#include "../include/unified_params.h"
 #include <iostream>
 #include <random>
 #include <vector>
@@ -10,12 +11,13 @@ using matops::Mat;
 using matops::Vec;
 
 int main() {
-    /* ───── 参数 ───── */
-    const long   q = 257;
-    const size_t n = 4;
+    /* ───── 参数 (来自 unified) ───── */
     const size_t d = 3;
     const size_t N = d;                  // 身份个数
-    const size_t R = (d + 1) * n + 1;    // = 17
+    auto mp = unified::default_midparams_128((int)d, (int)N);
+    const long q = mp.q;
+    const size_t n = mp.n;
+    const size_t R = (d + 1) * n + 1;
     const size_t m = 6;
 
     std::mt19937 rng(2025);

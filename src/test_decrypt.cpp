@@ -23,6 +23,7 @@
 #include <random>
 #include <cassert>
 #include <cmath>
+#include <fstream>
 
 using namespace matops;
 using namespace cryptolib;
@@ -215,7 +216,7 @@ static bool verify_lwe(const Vec& t, const Mat& A, long q, int bound) {
 /* ═══════════════════════════════════════════════════════════
    §6  主测试
    ═══════════════════════════════════════════════════════════ */
-int main() {
+int main(int argc, char** argv) {
     std::cout << "==========================================================\n";
     std::cout << "  多身份全同态加密 — 阈值解密测试 (GSW 类型)\n";
     std::cout << "  使用: matops.h, eval.h (gadget_inverse, build_gadget)\n";
@@ -225,6 +226,9 @@ int main() {
     const int d = 1;       // 深度
     const int N_id = 3;    // 身份数量
     auto params = unified::default_midparams_128(d, N_id);
+    const long q = params.q;
+    const int b = params.b;
+    const int B_chi = params.B_chi;
 
     std::cout << "[参数]\n"
               << "  n     = " << params.n     << "\n"
@@ -348,11 +352,39 @@ int main() {
 
     /* ─── 多轮随机测试 ─── */
     std::cout << "──────────────────────────────────────────\n";
-    std::cout << "  多轮随机测试 (50 轮)\n";
+
+    int random_trials = 50;
+    unsigned long long provided_seed = 0;
+    std::string hist_path;
+    if (argc > 1) {
+        try { random_trials = std::stoi(argv[1]); } catch(...) { random_trials = 50; }
+    }
+    if (argc > 2) {
+        try { provided_seed = std::stoull(argv[2]); } catch(...) { provided_seed = 0; }
+    }
+    if (argc > 3) hist_path = argv[3];
+
+    std::cout << "  多轮随机测试 (" << random_trials << " 轮)\n";
     std::cout << "──────────────────────────────────────────\n";
 
+    /* 可选: 使用提供的种子或随机设备初始化 RNG 以获得非确定性测试 */
+    if (provided_seed != 0) rng.seed(provided_seed);
+    else {
+        std::random_device rd;
+        rng.seed(rd());
+    }
+
+    std::ofstream hist_file;
+    if (!hist_path.empty()) {
+        hist_file.open(hist_path);
+        if (hist_file.is_open()) hist_file << "trial,mu,p_centered,pass\n";
+    }
+
     int extra_pass = 0;
-    for (int trial = 0; trial < 50; ++trial) {
+    long long sum_abs_p = 0;
+    long long max_abs_p = 0;
+
+    for (int trial = 0; trial < random_trials; ++trial) {
         int mu_trial = trial % 2;
 
         /* 每轮重新生成共享密钥 */
@@ -362,14 +394,27 @@ int main() {
         Mat C_trial = gsw_encrypt(A, G, mu_trial, q, rng);
         Mat C_hat_trial = simple_expand(C_trial, N_id);
 
-        /* 解密 */
-        int result = decrypt_full(C_hat_trial, trial_keys, params,
-                                  (uint64_t)(1000 + trial));
+        /* 使用带追踪的解密以获得 p/ED/gamma */
+        DecryptTrace trace = decrypt_with_trace(C_hat_trial, trial_keys, params, (uint64_t)(1000 + trial));
+        int result = trace.mu;
 
         total_tests++;
         if (result == mu_trial) { passed_tests++; extra_pass++; }
+
+        long long p_cent = std::llabs(trace.p_centered);
+        sum_abs_p += p_cent;
+        if (p_cent > max_abs_p) max_abs_p = p_cent;
+
+        if (hist_file.is_open()) {
+            hist_file << trial << "," << mu_trial << "," << trace.p_centered << "," << (result==mu_trial ? 1 : 0) << "\n";
+        }
     }
-    std::cout << "  50 轮中通过: " << extra_pass << " / 50\n\n";
+
+    double mean_abs_p = (random_trials > 0) ? ((double)sum_abs_p / random_trials) : 0.0;
+    std::cout << "  " << random_trials << " 轮中通过: " << extra_pass << " / " << random_trials << "\n";
+    std::cout << "  p (|centered|) mean = " << mean_abs_p << ", max = " << max_abs_p << "\n\n";
+
+    if (hist_file.is_open()) hist_file.close();
 
     /* ─── 总结 ─── */
     std::cout << "==========================================================\n";
