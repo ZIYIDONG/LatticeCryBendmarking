@@ -8,7 +8,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O2")
 set(INC_DIR ${CMAKE_SOURCE_DIR}/include)
 
 # Option: unified parameters
-option(UNIFIED_PARAMS "Use unified 128-bit parameters" ON)
+option(UNIFIED_PARAMS "Use unified parameters (generate params_cfg.h from CMake defaults)" ON)
 # Default unified parameter values (can be overridden via -D on cmake command line)
 # Standard 128-bit parameters (commented out)
 # set(MP12_N   512 CACHE STRING "MP12 n")
