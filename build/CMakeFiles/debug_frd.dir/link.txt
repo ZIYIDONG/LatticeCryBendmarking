@@ -1,1 +1,0 @@
-/usr/bin/c++  -g -O2 -g CMakeFiles/debug_frd.dir/src/debug_frd.cpp.o -o debug_frd 
