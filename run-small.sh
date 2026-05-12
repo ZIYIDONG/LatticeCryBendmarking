@@ -9,9 +9,7 @@ BUILD_DIR="$ROOT_DIR/build-small"
 
 # Small demo params (fast): n=8, q=257, b=2, lambda=8, N_id=3, d=1
 cmake -S "$ROOT_DIR" -B "$BUILD_DIR" \
-    -DUNIFIED_PARAMS=ON \
-    -DMP12_N=8 -DMP12_Q=257 -DMP12_B=2 \
-    -DMID_LAMBDA=8 -DMID_N_ID=3 -DMID_D=1
+    -DUNIFIED_PARAMS=ON
 
 cmake --build "$BUILD_DIR" -j
 
