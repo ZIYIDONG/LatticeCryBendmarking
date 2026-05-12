@@ -53,7 +53,15 @@ struct Params {
         Params p;
         p.n = n; p.d = d; p.m = m; p.q = q;
         p.N = (d + 1) * n + 1;
-        p.sigma = sigma;
+        if (sigma > 0.0) {
+            p.sigma = sigma;
+        } else {
+#if defined(UNIENC_SIGMA)
+            p.sigma = UNIENC_SIGMA;
+#else
+            p.sigma = 3.2;
+#endif
+        }
         return p;
     }
 };

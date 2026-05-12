@@ -49,7 +49,11 @@ struct Params {
         p.k     = (int)std::ceil(std::log((double)q) / std::log((double)b));
         p.m_bar = n;                    // Ā is n×n (square, random)
         p.m     = p.m_bar + n * p.k;   // full width of A
+#if defined(MP12_SIGMA)
+        p.sigma = MP12_SIGMA;
+#else
         p.sigma = 1.0;                  // trapdoor entry distribution width
+#endif
         // Preimage Gaussian width: s > σ_1(T) · √(n·k + n) · ω(√log n)
         // A conservative choice: s = b·k·n  (provably secure for moderate n)
         p.s     = (double)b * p.k * std::sqrt((double)n) * 5.0;

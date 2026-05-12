@@ -10,3 +10,5 @@
 #define MID_LAMBDA @MID_LAMBDA@
 #define MID_N_ID @MID_N_ID@
 #define MID_D @MID_D@
+#define MP12_SIGMA @MP12_SIGMA@
+#define UNIENC_SIGMA @UNIENC_SIGMA@
