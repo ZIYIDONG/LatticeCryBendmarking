@@ -51,7 +51,6 @@ namespace cryptolib {
 /* 复用 matops / eval 的类型 */
 using matops::Mat;
 using matops::Vec;
-using matops::mod_pos;
 using matops::make_mat;
 
 /* ══════════════════════════════════════════════════════════
@@ -166,7 +165,7 @@ inline Vec vec_mat_mul(const Vec& v, const Mat& A, long q) {
         if (vr == 0) continue;
         const Vec& row = A[r];
         for (int c = 0; c < C; ++c)
-            result[c] = mod_pos(result[c] + vr * row[c], q);
+            result[c] = matops::mod_pos(result[c] + vr * row[c], q);
     }
     return result;
 }
@@ -177,7 +176,7 @@ inline Vec vec_mat_mul(const Vec& v, const Mat& A, long q) {
 inline long vec_dot_mod(const Vec& a, const Vec& b, long q) {
     long acc = 0;
     for (size_t i = 0; i < a.size(); ++i)
-        acc = mod_pos(acc + a[i] * b[i], q);
+        acc = matops::mod_pos(acc + a[i] * b[i], q);
     return acc;
 }
 
@@ -185,7 +184,7 @@ inline long vec_dot_mod(const Vec& a, const Vec& b, long q) {
  * 中心化归约: 将 x ∈ [0, q) 映射到 (-q/2, q/2]
  */
 inline long center_mod(long x, long q) {
-    long r = mod_pos(x, q);
+    long r = matops::mod_pos(x, q);
     if (r > q / 2) r -= q;
     return r;
 }
@@ -261,7 +260,7 @@ inline long part_dec(const Mat& C_hat,
 
         /* γ_k += v_j · u  (mod q) */
         long dot = vec_dot_mod(vj, u, q);
-        gamma_k = mod_pos(gamma_k + dot, q);
+        gamma_k = matops::mod_pos(gamma_k + dot, q);
     }
 
     /* ⑥ 采样掩蔽噪声 e^{sm} */
@@ -270,7 +269,7 @@ inline long part_dec(const Mat& C_hat,
     long e_sm = sample_symmetric(B_sm, rng);
 
     /* ⑦ ED_k = γ_k + e^{sm}  (mod q) */
-    long ED_k = mod_pos(gamma_k + e_sm, q);
+    long ED_k = matops::mod_pos(gamma_k + e_sm, q);
 
     return ED_k;
 }
@@ -298,7 +297,7 @@ inline int fin_dec(const std::vector<long>& ED, long q) {
     /* ① 累加所有部分解密份额 */
     long p_sum = 0;
     for (long ed : ED)
-        p_sum = mod_pos(p_sum + ed, q);
+        p_sum = matops::mod_pos(p_sum + ed, q);
 
     /* ② 中心化并判定 */
     long p_centered = center_mod(p_sum, q);
@@ -383,19 +382,19 @@ inline DecryptTrace decrypt_with_trace(const Mat& C_hat,
         for (int j = 0; j < params.N_id; ++j) {
             Mat Ckj = extract_block(C_hat, k, j, params.R, params.M);
             Vec vj  = vec_mat_mul(keys[k], Ckj, q);
-            gamma_k = mod_pos(gamma_k + vec_dot_mod(vj, u, q), q);
+            gamma_k = matops::mod_pos(gamma_k + vec_dot_mod(vj, u, q), q);
         }
         trace.gamma[k] = gamma_k;
 
         /* 掩蔽噪声 */
         long e_sm = sample_symmetric(B_sm, rng);
-        trace.ED[k] = mod_pos(gamma_k + e_sm, q);
+        trace.ED[k] = matops::mod_pos(gamma_k + e_sm, q);
     }
 
     /* FinDec */
     trace.p_sum = 0;
     for (int i = 0; i < params.N_id; ++i)
-        trace.p_sum = mod_pos(trace.p_sum + trace.ED[i], q);
+        trace.p_sum = matops::mod_pos(trace.p_sum + trace.ED[i], q);
 
     trace.p_centered = center_mod(trace.p_sum, q);
     long abs_p = (trace.p_centered >= 0) ? trace.p_centered : -trace.p_centered;
