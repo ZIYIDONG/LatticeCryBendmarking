@@ -467,7 +467,7 @@ static void scaling_test()
     };
 
     const int REPS = 200;
-    const int b = unified::default_mp12_params_128().b;
+    const int b = unified::default_mp12_params().b;
 
     for (auto& cfg : configs) {
         MIDParams p = MIDParams::make(cfg.n, cfg.d, cfg.q, cfg.N, b, 4, 1);

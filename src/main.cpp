@@ -203,7 +203,7 @@ int main() {
 
     // Parameters: n=512, q=134219777  security level: 128 bit
     // unified 128-bit parameters
-    auto p = unified::default_mp12_params_128();
+    auto p = unified::default_mp12_params();
     std::cout << "\nParameters:\n";
     std::cout << "  n = " << p.n << "  (lattice dimension)\n";
     std::cout << "  q = " << p.q << "  (modulus)\n";
@@ -223,7 +223,7 @@ int main() {
 
     // Larger parameter set
     std::cout << "\n\n=== Larger params: n=16, q=8209 ===\n";
-    auto p2 = unified::default_mp12_params_128(); // use unified params for consistency
+    auto p2 = unified::default_mp12_params(); // use unified params for consistency
     std::cout << "  m = " << p2.m << ",  k = " << p2.k << "\n";
     Trapdoor td2 = gen_trap(p2, 42);
     UniformSampler us2(p2.q, 13);

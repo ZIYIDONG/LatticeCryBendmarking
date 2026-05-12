@@ -514,10 +514,6 @@
 			"properties" : 
 			[
 				{
-					"name" : "ADVANCED",
-					"value" : "1"
-				},
-				{
 					"name" : "HELPSTRING",
 					"value" : "No help, variable specified on the command line."
 				}
@@ -1256,6 +1252,30 @@
 			],
 			"type" : "STRING",
 			"value" : "134219777"
+		},
+		{
+			"name" : "MP12_SIGMA",
+			"properties" : 
+			[
+				{
+					"name" : "HELPSTRING",
+					"value" : "MP12 sigma"
+				}
+			],
+			"type" : "STRING",
+			"value" : "1.0"
+		},
+		{
+			"name" : "UNIENC_SIGMA",
+			"properties" : 
+			[
+				{
+					"name" : "HELPSTRING",
+					"value" : "UniEnc LWE sigma"
+				}
+			],
+			"type" : "STRING",
+			"value" : "3.2"
 		},
 		{
 			"name" : "UNIFIED_PARAMS",

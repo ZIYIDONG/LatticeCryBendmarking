@@ -6,7 +6,7 @@ using namespace cryptolib;
 
 int main() {
     // F_7 上 x^2 + 1 是不是不可约? 7 mod 4 == 3, 所以 -1 不是 QR, 是的
-    auto __u_p = unified::default_mp12_params_128(); long q = __u_p.q;
+    auto __u_p = unified::default_mp12_params(); long q = __u_p.q;
     Vec f = {1, 0, 1};   // 1 + 0·x + x^2 = x^2 + 1
     std::cout << "f = x^2 + 1, deg = " << poly_deg(f) << "\n";
     std::cout << "is_irreducible(x^2+1, F_7) = " << is_irreducible(f, q) << "\n";

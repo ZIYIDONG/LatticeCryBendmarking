@@ -44,7 +44,7 @@ static void hr() { std::cout << std::string(72, '-') << "\n"; }
    ════════════════════════════════════════════════════ */
 void test_correctness() {
     std::cout << "\n========== 正确性测试 ==========\n";
-    auto __u_p = unified::default_mp12_params_128(); long q = __u_p.q;
+    auto __u_p = unified::default_mp12_params(); long q = __u_p.q;
 
     Mat A = random_mat(8, 6, q, 1);
     Mat B = random_mat(8, 6, q, 2);
@@ -89,7 +89,7 @@ void simulate_hibe_delegation_step() {
     std::cout << "\n========== HIBE 第 ℓ 层委托步骤 ==========\n";
 
     // HIBE 参数
-    auto __u_p = unified::default_mp12_params_128(); long q = __u_p.q;
+    auto __u_p = unified::default_mp12_params(); long q = __u_p.q;
     int  n  = 8;
     int  k  = 14;          // ⌈log_2 q⌉
     int  nk = n * k;       // = 112
@@ -173,7 +173,7 @@ struct BenchResult {
 
 void run_benchmarks() {
     std::cout << "\n========== 微观基准测试 ==========\n\n";
-    auto __u_p = unified::default_mp12_params_128(); long q = __u_p.q;
+    auto __u_p = unified::default_mp12_params(); long q = __u_p.q;
 
     // 测试维度: 模拟 MP12 / HIBE 中常见的矩阵尺寸
     struct Dim { int r, c; const char* name; };

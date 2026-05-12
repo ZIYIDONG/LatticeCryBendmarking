@@ -35,7 +35,7 @@ static Mat scalar_mul(long s, const Mat& A, long q) {
 }
 
 int main() {
-    auto mp = unified::default_mp12_params_128();
+    auto mp = unified::default_mp12_params();
     const long q = mp.q;
     const int  b = mp.b;
     const int  k = eval_compute_k(q, b);

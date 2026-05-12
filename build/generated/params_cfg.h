@@ -10,3 +10,5 @@
 #define MID_LAMBDA 128
 #define MID_N_ID 3
 #define MID_D 1
+#define MP12_SIGMA 1.0
+#define UNIENC_SIGMA 3.2

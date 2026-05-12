@@ -110,7 +110,7 @@ int main() {
     /* ───── Test 3: 全秩差分核心性质 ───── */
     std::cout << "\n--- Test 3: 全秩差分性质 (核心) ---\n";
     {
-        auto __u_p = unified::default_mp12_params_128(); long q = __u_p.q;
+        auto __u_p = unified::default_mp12_params(); long q = __u_p.q;
         int n = 4;
         auto ctx = FRDContext::setup(n, q, 13);
 
@@ -142,7 +142,7 @@ int main() {
     /* ───── Test 4: 线性性 FRD(a) - FRD(b) = FRD(a-b) ───── */
     std::cout << "\n--- Test 4: 线性性 FRD(a) - FRD(b) = FRD(a-b) ---\n";
     {
-        auto __u_p = unified::default_mp12_params_128(); long q = __u_p.q;
+        auto __u_p = unified::default_mp12_params(); long q = __u_p.q;
         int n = 5;
         auto ctx = FRDContext::setup(n, q, 99);
         std::mt19937_64 rng(7);
@@ -170,7 +170,7 @@ int main() {
     /* ───── Test 5: 零身份 → 零矩阵 ───── */
     std::cout << "\n--- Test 5: FRD(0) = 0 ---\n";
     {
-        auto __u_p = unified::default_mp12_params_128(); long q = __u_p.q;
+        auto __u_p = unified::default_mp12_params(); long q = __u_p.q;
         int n = 6;
         auto ctx = FRDContext::setup(n, q, 1);
         Vec zero(n, 0);
@@ -185,7 +185,7 @@ int main() {
     /* ───── Test 6: FRD(单位元 e_0) = I_n ───── */
     std::cout << "\n--- Test 6: FRD([1,0,0,...]) = I_n ---\n";
     {
-        auto __u_p = unified::default_mp12_params_128(); long q = __u_p.q;
+        auto __u_p = unified::default_mp12_params(); long q = __u_p.q;
         int n = 5;
         auto ctx = FRDContext::setup(n, q, 5);
         Vec e0(n, 0); e0[0] = 1;     // 多项式 a(x) = 1
@@ -203,7 +203,7 @@ int main() {
     /* ───── Test 7: 性能测试 ───── */
     std::cout << "\n--- Test 7: 性能 (n=8, q=8209) ---\n";
     {
-        auto __u_p = unified::default_mp12_params_128(); long q = __u_p.q;
+        auto __u_p = unified::default_mp12_params(); long q = __u_p.q;
         int n = 8;
         auto ctx = FRDContext::setup(n, q, 11);
         std::mt19937_64 rng(0);
