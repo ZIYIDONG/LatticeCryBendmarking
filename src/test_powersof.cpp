@@ -2,6 +2,7 @@
 #include <iostream>
 #include <iomanip>
 #include <random>
+#include "unified_params.h"
 
 using namespace cryptolib;
 
@@ -20,7 +21,7 @@ int main() {
     /* ───── Test 1: 标量 Powersof2,小例子 ───── */
     std::cout << "\n--- Test 1: Powersof2 标量 (q=17, b=2) ---\n";
     {
-        long q = 17;
+        auto __u_p = unified::default_mp12_params_128(); long q = __u_p.q;
         int b = 2;
         int k = compute_k(q, b);
         std::cout << "q=" << q << "  b=" << b << "  k=" << k << "\n";
@@ -34,7 +35,7 @@ int main() {
     /* ───── Test 2: 标量 Powers-of-3 ───── */
     std::cout << "\n--- Test 2: Powersof3 标量 (q=97, b=3) ---\n";
     {
-        long q = 97;
+        auto __u_p = unified::default_mp12_params_128(); long q = __u_p.q;
         int b = 3;
         Vec p = powers_of_b_scalar(5, b, q);
         std::cout << "  Powersof3(5)  = ";
@@ -45,7 +46,7 @@ int main() {
     /* ───── Test 3: BitDecomp 是 Powersof 的逆向操作 ───── */
     std::cout << "\n--- Test 3: BitDecomp 重构原值 ---\n";
     {
-        long q = 257;
+        auto __u_p = unified::default_mp12_params_128(); long q = __u_p.q;
         int b = 2;
         int k = compute_k(q, b);
         std::cout << "q=" << q << "  k=" << k << "\n";
@@ -68,7 +69,7 @@ int main() {
     /*    <BitDecomp(x), Powersof(y)> == x·y (mod q)         */
     std::cout << "\n--- Test 4: 对偶恒等式 (核心性质) ---\n";
     {
-        long q = 1031;          // 素数
+        auto __u_p = unified::default_mp12_params_128(); long q = __u_p.q;          // 素数
         int b = 2;
         std::mt19937_64 rng(42);
         std::uniform_int_distribution<long> dist(0, q - 1);
@@ -114,7 +115,7 @@ int main() {
     /* ───── Test 6: 向量版 + 平衡分解 ───── */
     std::cout << "\n--- Test 6: 向量版对偶恒等式 ---\n";
     {
-        long q = 1031;
+        auto __u_p = unified::default_mp12_params_128(); long q = __u_p.q;
         int b = 2;
         int n = 8;
         std::mt19937_64 rng(7);
@@ -138,7 +139,7 @@ int main() {
     /* ───── Test 7: 平衡分解的范数优势 ───── */
     std::cout << "\n--- Test 7: 平衡 vs 非平衡分解 (b=8) ---\n";
     {
-        long q = 4099;
+        auto __u_p = unified::default_mp12_params_128(); long q = __u_p.q;
         int b = 8;
         std::mt19937_64 rng(99);
         std::uniform_int_distribution<long> dist(0, q - 1);

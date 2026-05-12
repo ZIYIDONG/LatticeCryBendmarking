@@ -19,6 +19,7 @@
 #include <chrono>
 #include <vector>
 #include <string>
+#include "unified_params.h"
 
 using namespace matops;
 using clk = std::chrono::high_resolution_clock;
@@ -43,7 +44,7 @@ static void hr() { std::cout << std::string(72, '-') << "\n"; }
    ════════════════════════════════════════════════════ */
 void test_correctness() {
     std::cout << "\n========== 正确性测试 ==========\n";
-    long q = 1031;
+    auto __u_p = unified::default_mp12_params_128(); long q = __u_p.q;
 
     Mat A = random_mat(8, 6, q, 1);
     Mat B = random_mat(8, 6, q, 2);
@@ -88,7 +89,7 @@ void simulate_hibe_delegation_step() {
     std::cout << "\n========== HIBE 第 ℓ 层委托步骤 ==========\n";
 
     // HIBE 参数
-    long q  = 8209;
+    auto __u_p = unified::default_mp12_params_128(); long q = __u_p.q;
     int  n  = 8;
     int  k  = 14;          // ⌈log_2 q⌉
     int  nk = n * k;       // = 112

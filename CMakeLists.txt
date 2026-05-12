@@ -16,6 +16,8 @@ set(MP12_B   27 CACHE STRING "MP12 b")
 set(MID_LAMBDA 128 CACHE STRING "MID lambda")
 set(MID_N_ID   3 CACHE STRING "MID N_id")
 set(MID_D      1 CACHE STRING "MID d")
+set(MP12_SIGMA 1.0 CACHE STRING "MP12 sigma")
+set(UNIENC_SIGMA 3.2 CACHE STRING "UniEnc LWE sigma")
 
 # Configure params header into build directory when enabled
 if(UNIFIED_PARAMS)
