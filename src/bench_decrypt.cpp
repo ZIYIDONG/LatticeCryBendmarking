@@ -175,6 +175,11 @@ static void print_table(const std::string& title,
    ══════════════════════════════════════════════════ */
 static void run_benchmark(int n, int d, long q, int N_id, int REPS)
 {
+    // Force use of unified defaults for mp12 parameters (ignore caller q)
+    auto __u_mp = unified::default_mp12_params();
+    q = __u_mp.q;    // override any passed q to ensure consistency
+    const int b = __u_mp.b;
+
     const int b     = unified::default_midparams_128(d, N_id).b;
     const int B_chi = 1;
 
@@ -454,16 +459,17 @@ static void scaling_test()
     std::cout << "╠═════╪═════╪═══════╪═════╪══════╪═══════════╪════════╪════════╣\n";
 
     struct Config { int n, d, N; long q; };
+    long default_q = unified::default_mp12_params().q;
     std::vector<Config> configs = {
-        {2, 1, 2, 65537},
-        {2, 1, 3, 65537},
-        {2, 1, 5, 65537},
-        {3, 1, 3, 65537},
-        {4, 1, 3, 65537},
-        {2, 2, 3, 65537},
-        {2, 3, 3, 65537},
-        {4, 2, 3, 65537},
-        {4, 2, 5, 65537},
+        {2, 1, 2, default_q},
+        {2, 1, 3, default_q},
+        {2, 1, 5, default_q},
+        {3, 1, 3, default_q},
+        {4, 1, 3, default_q},
+        {2, 2, 3, default_q},
+        {2, 3, 3, default_q},
+        {4, 2, 3, default_q},
+        {4, 2, 5, default_q},
     };
 
     const int REPS = 200;

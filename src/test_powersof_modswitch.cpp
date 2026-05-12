@@ -91,7 +91,7 @@ int main() {
     /*    <BitDecomp(c̄), sk_id> ≈ (p/q)·<c̄, s̄>  (mod p)        */
     std::cout << "\n--- Test 4: 模数切换下的近似对偶恒等式 ---\n";
     {
-        long p = 257, q = 65537;       // 都是素数
+        auto __u_p = unified::default_mp12_params(); long p = __u_p.q, q = __u_p.q;       // use unified default q for tests
         int m = 8;
         int k_q = compute_k(q, 2);
         int k_p = compute_k(p, 2);

@@ -33,7 +33,9 @@ int main() {
     }
 
     /* ───── Test 2: 标量 Powers-of-3 ───── */
-    std::cout << "\n--- Test 2: Powersof3 标量 (q=97, b=3) ---\n";
+    {
+        auto __u_p = unified::default_mp12_params(); long q = __u_p.q;
+        std::cout << "\n--- Test 2: Powersof3 标量 (q=" << q << ", b=3) ---\n";
     {
         auto __u_p = unified::default_mp12_params(); long q = __u_p.q;
         int b = 3;
@@ -92,8 +94,9 @@ int main() {
     {
         std::mt19937_64 rng(123);
         struct Case { long q; int b; };
-        Case cases[] = {{97, 2}, {97, 3}, {97, 5}, {1031, 2},
-                        {1031, 4}, {1031, 8}, {65537, 16}};
+        auto __u_p = unified::default_mp12_params();
+        Case cases[] = {{__u_p.q, 2}, {__u_p.q, 3}, {__u_p.q, 5}, {__u_p.q, 2},
+                        {__u_p.q, 4}, {__u_p.q, 8}, {__u_p.q, 16}};
         for (auto c : cases) {
             std::uniform_int_distribution<long> dist(0, c.q - 1);
             int pass = 0, trials = 1000;

@@ -1,1 +1,0 @@
-/usr/bin/c++  -g -O2 CMakeFiles/bench_decrypt.dir/src/bench_decrypt.cpp.o -o bench_decrypt 

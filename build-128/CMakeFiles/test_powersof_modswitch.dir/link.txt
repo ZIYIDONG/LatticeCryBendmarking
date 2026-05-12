@@ -1,1 +1,0 @@
-/usr/bin/c++  -g -O2 CMakeFiles/test_powersof_modswitch.dir/src/test_powersof_modswitch.cpp.o -o test_powersof_modswitch 
