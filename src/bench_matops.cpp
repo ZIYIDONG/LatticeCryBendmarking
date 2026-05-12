@@ -173,7 +173,7 @@ struct BenchResult {
 
 void run_benchmarks() {
     std::cout << "\n========== 微观基准测试 ==========\n\n";
-    long q = 8209;
+    auto __u_p = unified::default_mp12_params_128(); long q = __u_p.q;
 
     // 测试维度: 模拟 MP12 / HIBE 中常见的矩阵尺寸
     struct Dim { int r, c; const char* name; };
