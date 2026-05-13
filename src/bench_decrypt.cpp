@@ -178,8 +178,7 @@ static void run_benchmark(int n, int d, long q, int N_id, int REPS)
     // Force use of unified defaults for mp12 parameters (ignore caller q)
     auto __u_mp = unified::default_mp12_params();
     q = __u_mp.q;    // override any passed q to ensure consistency
-    const int b = __u_mp.b;
-
+    // Use b from midparams for this MID setup
     const int b     = unified::default_midparams_128(d, N_id).b;
     const int B_chi = 1;
 
@@ -543,7 +542,7 @@ static void scaling_test()
 /* ══════════════════════════════════════════════════
    main
    ══════════════════════════════════════════════════ */
-int main()
+void run_bench_decrypt()
 {
     std::cout << "╔══════════════════════════════════════════════════════╗\n";
     std::cout << "║  多身份 FHE 解密 — 基本操作耗时拆解与缩放分析       ║\n";
@@ -565,6 +564,5 @@ int main()
     /* 缩放趋势对比 */
     scaling_test();
 
-    return 0;
 }
 

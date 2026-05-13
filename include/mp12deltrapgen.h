@@ -484,3 +484,6 @@ inline bool verify_extended(const Mat& A, const Mat& B,
 }
 
 } // namespace mp12
+
+// Entry point that runs all delegated trapdoor tests (defined at file scope in mp12deltrapgen.cpp)
+void run_del_tests(const mp12::Params& p);

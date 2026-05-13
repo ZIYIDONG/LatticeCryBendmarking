@@ -18,6 +18,7 @@
 #include <vector>
 #include <cmath>
 #include <stdexcept>
+#include <string>
 
 namespace cryptolib {
 
@@ -78,7 +79,7 @@ inline Vec powers_of_2_with_modswitch(
     bool reduce_mod_p = false) // 是否最后再 mod p
 {
     if (p <= 1 || q <= p)
-        throw std::invalid_argument("Need 1 < p < q");
+        throw std::invalid_argument(std::string("Need 1 < p < q (p=") + std::to_string(p) + ", q=" + std::to_string(q) + ")");
 
     int m   = (int)e.size();
     int k_p = compute_k(p, 2);    // 第一段长度

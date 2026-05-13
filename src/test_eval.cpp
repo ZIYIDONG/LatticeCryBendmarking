@@ -34,7 +34,7 @@ static Mat scalar_mul(long s, const Mat& A, long q) {
     return out;
 }
 
-int main() {
+void run_test_eval() {
     auto mp = unified::default_mp12_params();
     const long q = mp.q;
     const int  b = mp.b;
@@ -120,5 +120,4 @@ int main() {
     }
 
     std::cout << "\nDone.\n";
-    return 0;
 }

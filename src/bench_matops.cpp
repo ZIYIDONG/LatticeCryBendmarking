@@ -270,7 +270,7 @@ void run_benchmarks() {
               << std::setprecision(2) << t_mul/t_add << "×)\n";
 }
 
-int main() {
+void run_bench_matops() {
     std::cout << "════════════════════════════════════════════════════════════════\n";
     std::cout << "  HIBE Matrix Operations Benchmark\n";
     std::cout << "  (mat_add / mat_sub / mat_mul / mat_hcat)\n";
@@ -281,5 +281,4 @@ int main() {
     run_benchmarks();
 
     std::cout << "\nDone.\n";
-    return 0;
 }

@@ -4,7 +4,7 @@
 
 using namespace cryptolib;
 
-int main() {
+void run_debug_frd() {
     // F_7 上 x^2 + 1 是不是不可约? 7 mod 4 == 3, 所以 -1 不是 QR, 是的
     auto __u_p = unified::default_mp12_params(); long q = __u_p.q;
     Vec f = {1, 0, 1};   // 1 + 0·x + x^2 = x^2 + 1
@@ -29,5 +29,5 @@ int main() {
             }
         }
     }
-    return 0;
 }
+

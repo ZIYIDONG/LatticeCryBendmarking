@@ -10,7 +10,7 @@ using namespace cryptolib;
 using matops::Mat;
 using matops::Vec;
 
-int main() {
+void run_test_expand() {
     /* ───── 参数 (来自 unified) ───── */
     const size_t d = 3;
     const size_t N = d;                  // 身份个数
@@ -107,5 +107,5 @@ int main() {
               << (zero_ok ? "PASS" : "FAIL") << "\n";
 
     std::cout << "\nDone.\n";
-    return 0;
 }
+

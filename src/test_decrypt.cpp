@@ -216,7 +216,7 @@ static bool verify_lwe(const Vec& t, const Mat& A, long q, int bound) {
 /* ═══════════════════════════════════════════════════════════
    §6  主测试
    ═══════════════════════════════════════════════════════════ */
-int main(int argc, char** argv) {
+void run_test_decrypt(int argc, char** argv) {
     std::cout << "==========================================================\n";
     std::cout << "  多身份全同态加密 — 阈值解密测试 (GSW 类型)\n";
     std::cout << "  使用: matops.h, eval.h (gadget_inverse, build_gadget)\n";
@@ -424,6 +424,12 @@ int main(int argc, char** argv) {
     std::cout << "  " << (passed_tests == total_tests ? "✓ 全部通过!" : "✗ 有失败") << "\n";
     std::cout << "==========================================================\n";
 
-    return (passed_tests == total_tests) ? 0 : 1;
+}
+
+// No-arg wrapper for consolidated runner
+void run_test_decrypt() {
+    int argc = 1;
+    char* argv[] = {(char*)"test_decrypt", nullptr};
+    run_test_decrypt(argc, argv);
 }
 

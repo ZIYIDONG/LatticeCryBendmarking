@@ -13,7 +13,7 @@ static void print_vec(const char* label, const Vec& v) {
     std::cout << "]\n";
 }
 
-int main() {
+void run_test_powersof() {
     std::cout << "================================================\n";
     std::cout << "  Powersof_b / BitDecomp_b  测试\n";
     std::cout << "================================================\n";
@@ -35,11 +35,9 @@ int main() {
     /* ───── Test 2: 标量 Powers-of-3 ───── */
     {
         auto __u_p = unified::default_mp12_params(); long q = __u_p.q;
-        std::cout << "\n--- Test 2: Powersof3 标量 (q=" << q << ", b=3) ---\n";
-    {
-        auto __u_p = unified::default_mp12_params(); long q = __u_p.q;
         int b = 3;
         Vec p = powers_of_b_scalar(5, b, q);
+        std::cout << "\n--- Test 2: Powersof3 标量 (q=" << q << ", b=3) ---\n";
         std::cout << "  Powersof3(5)  = ";
         print_vec("", p);
         // 期望: (5, 15, 45, 38, 17, 51)  (因为 5·81 = 405 = 4·97+17 = 17)
@@ -164,5 +162,4 @@ int main() {
     }
 
     std::cout << "\nDone.\n";
-    return 0;
 }

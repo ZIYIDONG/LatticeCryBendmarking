@@ -57,7 +57,7 @@ static Mat mat_sub(const Mat& A, const Mat& B, long q) {
     return R;
 }
 
-int main() {
+void run_test_frd() {
     std::cout << "================================================\n";
     std::cout << "  FRD: Full-Rank Difference Encoding (ABB10)\n";
     std::cout << "================================================\n";
@@ -226,5 +226,6 @@ int main() {
     }
 
     std::cout << "\nDone.\n";
-    return 0;
 }
+
+

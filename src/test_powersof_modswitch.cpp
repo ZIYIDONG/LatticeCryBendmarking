@@ -3,6 +3,9 @@
 #include <iomanip>
 #include <random>
 #include <cmath>
+#include <stdexcept>
+#include <string>
+#include "unified_params.h"
 
 using namespace cryptolib;
 
@@ -15,7 +18,7 @@ static void print_vec(const char* label, const Vec& v, int maxshow = 16) {
     std::cout << "] (len=" << v.size() << ")\n";
 }
 
-int main() {
+void run_test_powersof_modswitch() {
     std::cout << "=========================================================\n";
     std::cout << "  Two-part Powersof2 with modulus switching (IBE keygen)\n";
     std::cout << "=========================================================\n";
@@ -34,6 +37,8 @@ int main() {
         Vec e = {3, 17, 100, 200};
         std::cout << "e = [3, 17, 100, 200]\n";
 
+        if (!(p > 1 && q > p))
+            throw std::invalid_argument(std::string("Invalid modulus parameters in test (p<=1 or q<=p): p=") + std::to_string(p) + ", q=" + std::to_string(q));
         Vec sk = ibe_extract_key(e, p, q);
         std::cout << "sk_id 长度 = " << sk.size()
                   << "  (期望 " << k_p + m*k_q << ")\n";
@@ -69,6 +74,8 @@ int main() {
         long p = 16, q = 1024;
         int k_q = compute_k(q, 2);  // = 10
         Vec e = {100};
+        if (!(p > 1 && q > p))
+            throw std::invalid_argument(std::string("Invalid modulus parameters in test (p<=1 or q<=p): p=") + std::to_string(p) + ", q=" + std::to_string(q));
         Vec sk = ibe_extract_key(e, p, q);
         // 跳过第一段
         int k_p = compute_k(p, 2);
@@ -91,7 +98,7 @@ int main() {
     /*    <BitDecomp(c̄), sk_id> ≈ (p/q)·<c̄, s̄>  (mod p)        */
     std::cout << "\n--- Test 4: 模数切换下的近似对偶恒等式 ---\n";
     {
-        auto __u_p = unified::default_mp12_params(); long p = __u_p.q, q = __u_p.q;       // use unified default q for tests
+        auto __u_p = unified::default_mp12_params(); long p = 17, q = __u_p.q;       // use unified default q for tests
         int m = 8;
         int k_q = compute_k(q, 2);
         int k_p = compute_k(p, 2);
@@ -178,6 +185,8 @@ int main() {
         long p = 17, q = 257;
         int m = 4;
         Vec e(m, 0);
+        if (!(p > 1 && q > p))
+            throw std::invalid_argument(std::string("Invalid modulus parameters in test (p<=1 or q<=p): p=") + std::to_string(p) + ", q=" + std::to_string(q));
         Vec sk = ibe_extract_key(e, p, q);
         int k_p = compute_k(p, 2);
         int k_q = compute_k(q, 2);
@@ -191,5 +200,4 @@ int main() {
     }
 
     std::cout << "\nDone.\n";
-    return 0;
 }

@@ -45,29 +45,19 @@ function(add_demo name)
     target_include_directories(${name} PRIVATE ${INC_DIR})
 endfunction()
 
-# ─── 主 MP12 程序 (包含 Test 1–11) ───
-add_demo(LatticeCryBenchmarking
-    src/main.cpp
-    src/mp12deltrapgen.cpp
+# Build all demo sources as a static library (exclude main.cpp and runner.cpp)
+file(GLOB DEMO_SRCS
+    ${CMAKE_SOURCE_DIR}/src/*.cpp
 )
+list(REMOVE_ITEM DEMO_SRCS ${CMAKE_SOURCE_DIR}/src/main.cpp ${CMAKE_SOURCE_DIR}/src/runner.cpp)
+add_library(demos STATIC ${DEMO_SRCS})
+target_include_directories(demos PRIVATE ${INC_DIR} ${CMAKE_BINARY_DIR}/generated)
 
-# ─── Powersof 系列 ───
-add_demo(test_powersof           src/test_powersof.cpp)
-add_demo(test_powersof_modswitch src/test_powersof_modswitch.cpp)
+# Single executable: main.cpp is the sole entry point and links the demos library
+add_executable(LatticeCryBenchmarking src/main.cpp)
+target_include_directories(LatticeCryBenchmarking PRIVATE ${INC_DIR} ${CMAKE_BINARY_DIR}/generated)
+target_link_libraries(LatticeCryBenchmarking PRIVATE demos)
 
-# ─── FRD 系列 ───
-add_demo(test_frd  src/test_frd.cpp)
-add_demo(debug_frd src/debug_frd.cpp)
+# Note: runner.cpp is kept in the tree but not built. If you prefer the runner as the entry,
+# change the executable source above to src/runner.cpp and adjust accordingly.
 
-# ─── matops 基准测试 ───
-add_demo(bench_matops src/bench_matops.cpp)
-
-# ─── expand/extend 基准测试 ───
-add_demo(test_expand src/test_expand.cpp)
-
-# ─── eval 测试 ───
-add_demo(test_eval src/test_eval.cpp)
-
-# ─── 多身份 FHE 阈值解密 ───
-add_demo(test_decrypt  src/test_decrypt.cpp)
-add_demo(bench_decrypt src/bench_decrypt.cpp)
