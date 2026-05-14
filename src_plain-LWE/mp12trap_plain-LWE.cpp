@@ -2,7 +2,7 @@
  * Extracted trapgen-related tests and helpers from main.cpp
  */
 
-#include "../include/mp12trap.h"
+#include "../include_plain-LWE/mp12trap_plain-LWE.h"
 #include <iostream>
 #include <iomanip>
 #include <cmath>

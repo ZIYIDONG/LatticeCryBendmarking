@@ -39,7 +39,7 @@
  *   G·(H⊗I_k) = (I_n·H)⊗(g^T·I_k) = H⊗g^T = H·G  ✓
  */
 
-#include "mp12.h"
+#include "mp12_plain-LWE.h"
 #include <numeric>  // for gcd
 
 namespace mp12 {

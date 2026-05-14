@@ -1,4 +1,4 @@
-#include "../include/frd.h"
+#include "../include_plain-LWE/frd_plain-LWE.h"
 #include <iostream>
 #include <iomanip>
 #include <random>
@@ -6,7 +6,7 @@
 #include <numeric>
 #include <fstream>
 #include <sstream>
-#include "unified_params.h"
+#include "unified_params_plain-LWE.h"
 
 using namespace cryptolib;
 

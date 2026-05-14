@@ -10,8 +10,8 @@
  *   输出尺寸: (N·R) × (N·M)
  */
 
-#include "matops.h"
-#include "extend.h"
+#include "matops_plain-LWE.h"
+#include "extend_plain-LWE.h"
 #include <vector>
 #include <stdexcept>
 

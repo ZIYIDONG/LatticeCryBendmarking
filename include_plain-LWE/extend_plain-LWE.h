@@ -12,7 +12,7 @@
  *   语义: X_j 是  (b_j - b_i)^T · R  的同态密文,其中 R 是 UniEnc 用的掩盖矩阵
  */
 
-#include "matops.h"
+#include "matops_plain-LWE.h"
 #include <vector>
 #include <stdexcept>
 

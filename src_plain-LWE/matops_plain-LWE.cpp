@@ -1,5 +1,5 @@
 /**
- * bench_matops.cpp
+ * matops.cpp
  *
  * 完整复现图片里的 HIBE 第 ℓ 层委托步骤:
  *   H_{id_ℓ} = FRD(id_ℓ)
@@ -13,13 +13,15 @@
  * 在 HIBE 典型维度下比较各操作的耗时。
  */
 
-#include "../include/matops.h"
+#include "../include_plain-LWE/matops_plain-LWE.h"
 #include <iostream>
 #include <iomanip>
 #include <chrono>
 #include <vector>
 #include <string>
-#include "unified_params.h"
+#include <fstream>
+#include <sstream>
+#include "unified_params_plain-LWE.h"
 
 using namespace matops;
 using clk = std::chrono::high_resolution_clock;
@@ -38,6 +40,18 @@ double time_ms(int repeats, F&& f) {
 }
 
 static void hr() { std::cout << std::string(72, '-') << "\n"; }
+
+/* ───── 文件输出辅助 ───── */
+static void write_to_bench_file(const std::string& content) {
+    constexpr const char* OUT_PATH = "../bendmarking_output/bendmarking_plain-LWE.txt";
+    std::ofstream fout(OUT_PATH, std::ios::app);
+    if (fout.is_open()) {
+        fout << content;
+        fout.close();
+    }
+}
+
+static std::ostringstream bench_oss;  // 全局收集器
 
 /* ════════════════════════════════════════════════════
    §1  正确性验证: 所有操作的代数性质
@@ -141,6 +155,18 @@ void simulate_hibe_delegation_step() {
     auto [rT, cT] = dim(T);
     auto [rA, cA] = dim(A_curr);
     auto [rTg, cTg] = dim(target);
+
+    std::ostringstream local_oss;
+    local_oss << "\n--- HIBE Delegation Step Breakdown ---\n"
+              << "  Step 1  T = H_{id}·G       : " << rT << "×" << cT
+              << "    " << std::fixed << std::setprecision(3) << ms_T << " ms\n"
+              << "  Step 2  B = A_ℓ + T        : " << rT << "×" << cT
+              << "    " << ms_B << " ms\n"
+              << "  Step 3  [A_{ℓ-1} || B]    : " << rA << "×" << cA
+              << "  " << ms_cat << " ms\n"
+              << "  Step 4  H_ℓ·G - B         : " << rTg << "×" << cTg
+              << "    " << ms_target << " ms\n";
+
     std::cout << "\n  Step 1  T = H_{id}·G       : " << rT << "×" << cT
               << "    " << std::fixed << std::setprecision(3) << ms_T << " ms\n";
     std::cout << "  Step 2  B = A_ℓ + T        : " << rT << "×" << cT
@@ -154,6 +180,11 @@ void simulate_hibe_delegation_step() {
     std::cout << "  ─────────────────────────────────────────\n";
     std::cout << "  总耗时(单次委托步骤)   : "
               << std::setprecision(3) << total << " ms\n";
+    local_oss << "  ─────────────────────────────────────────\n";
+    local_oss << "  总耗时(单次委托步骤)   : "
+              << std::setprecision(3) << total << " ms\n";
+
+    bench_oss << local_oss.str() << "\n";
 
     // 防止编译器优化掉
     volatile long sink = A_curr[0][0] + target[0][0];
@@ -268,9 +299,28 @@ void run_benchmarks() {
               << std::setprecision(2) << t_cat/t_add << "×)\n";
     std::cout << "  mul :  " << std::setw(8) << std::setprecision(4) << t_mul << " ms  ("
               << std::setprecision(2) << t_mul/t_add << "×)\n";
+
+    // 写入文件
+    bench_oss << "\n=== Benchmark: Matrix Ops Relative Timing (128×128) ===\n"
+              << "  Parameters: q=" << q << "\n"
+              << "  add :  " << std::setw(8) << std::fixed << std::setprecision(4)
+              << t_add << " ms  (基准  1×)\n"
+              << "  sub :  " << std::setw(8) << t_sub << " ms  ("
+              << std::setprecision(2) << t_sub/t_add << "×)\n"
+              << "  hcat:  " << std::setw(8) << std::setprecision(4) << t_cat << " ms  ("
+              << std::setprecision(2) << t_cat/t_add << "×)\n"
+              << "  mul :  " << std::setw(8) << std::setprecision(4) << t_mul << " ms  ("
+              << std::setprecision(2) << t_mul/t_add << "×)\n";
 }
 
 void run_bench_matops() {
+    // 重置收集器
+    bench_oss.str("");
+    bench_oss.clear();
+
+    bench_oss << "=== Benchmark: Matrix Operations (matops.h) ===\n"
+              << "  API: mat_add / mat_sub / mat_hcat / mat_mul\n\n";
+
     std::cout << "════════════════════════════════════════════════════════════════\n";
     std::cout << "  HIBE Matrix Operations Benchmark\n";
     std::cout << "  (mat_add / mat_sub / mat_mul / mat_hcat)\n";
@@ -279,6 +329,9 @@ void run_bench_matops() {
     test_correctness();
     simulate_hibe_delegation_step();
     run_benchmarks();
+
+    // 统一写入文件
+    write_to_bench_file(bench_oss.str());
 
     std::cout << "\nDone.\n";
 }

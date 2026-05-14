@@ -9,8 +9,8 @@
  * 编译：g++ -O2 -std=c++17 -o del_demo main_del.cpp -lm
  */
 
-#include "../include/mp12.h"
-#include "../include/mp12deltrapgen.h"
+#include "../include_plain-LWE/mp12_plain-LWE.h"
+#include "../include_plain-LWE/mp12deltrapgen_plain-LWE.h"
 #include <iostream>
 #include <iomanip>
 #include <cmath>

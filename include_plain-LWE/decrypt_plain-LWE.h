@@ -38,8 +38,8 @@
  *   G⁻¹ = gadget_inverse          Z_q^{R × c} → Z^{M × c}
  */
 
-#include "matops.h"
-#include "eval.h"
+#include "matops_plain-LWE.h"
+#include "eval_plain-LWE.h"
 #include <vector>
 #include <random>
 #include <cmath>

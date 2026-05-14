@@ -77,8 +77,7 @@ LatticeCryBendmarking/
 │   ├── mp12.h                      # Core: GenTrap, SamplePre, gadget matrix G, Gaussian sampler
 │   ├── mp12trap.h                  # MP12 trapdoor test harness (Tests 1–7)
 │   ├── mp12deltrapgen.h            # Delegated trapdoor: DelTrapGen, SampleLeft, SampleRight
-│   ├── unified_params.h            # Unified parameter provider (reads params_cfg.h if available)
-│   ├── params_cfg.h.in             # CMake template for configurable parameters
+│   ├── unified_params_plain-LWE.h  # Unified parameter provider (#ifdef LATTICE_128BIT)
 │   ├── powersof.h                  # Powersof_b and BitDecomp_b (scalar / vector / matrix)
 │   ├── powersof_modswitch.h        # Powersof2 with modulus switching (IBE key extraction)
 │   ├── frd.h                       # Full-Rank Difference encoding over F_q[x]/(f(x))
@@ -96,9 +95,9 @@ LatticeCryBendmarking/
     ├── powersof.cpp                # Powersof / BitDecomp tests
     ├── powersof_modswitch.cpp      # Modulus switching tests
     ├── frd.cpp                     # FRD correctness & invertibility tests
-    ├── bench_matops.cpp            # Matrix operations performance benchmark
-    ├── test_expand.cpp             # Ciphertext expansion tests
-    ├── test_eval.cpp               # Homomorphic evaluation tests
+    ├── matops.cpp                  # Matrix operations performance benchmark
+    ├── expand.cpp                  # Ciphertext expansion tests
+    ├── eval.cpp                    # Homomorphic evaluation tests
     ├── test_decrypt.cpp            # PartDec / FinDec correctness tests
     └── bench_decrypt.cpp           # Decryption pipeline micro-benchmark
 ```
@@ -112,7 +111,7 @@ LatticeCryBendmarking/
 | Dependency | Minimum Version | Notes |
 |-----------|----------------|-------|
 | **C++20** compiler | GCC ≥ 11, Clang ≥ 14 | C++20 required for `__int128`, concepts, `std::span` |
-| **CMake** | ≥ 3.22 | Required for `configure_file()` |
+| **CMake** | ≥ 3.22 | Required for modern CMake features |
 | **OS** | Linux | Primary target. macOS/WSL may work with caveats |
 | **External libraries** | None | Zero dependencies beyond the C++ standard library |
 
@@ -137,27 +136,32 @@ cmake --build . -j
 gdb ./LatticeCryBenchmarking
 ```
 
-### Custom Parameters
+### Parameter Set Selection
 
-The project uses a CMake template [`include/params_cfg.h.in`](include/params_cfg.h.in) to inject compile-time parameters. Override defaults via `-D` flags:
+Two parameter sets are compiled into the binary via a **CMake option** — no template files or runtime config parsing:
+
+| Set | `n` | `q` | `b` | `m` | λ | Use Case |
+|-----|-----|-----|-----|-----|---|----------|
+| **Demo** (default) | 8 | 257 | 2 | 80 | 8 | Quick smoke test (< 5 s) |
+| **128-bit** | 512 | 134219777 | 27 | ~3584 | 128 | Near-production security (~5–10 min) |
 
 ```bash
-# 128-bit security parameters
-cmake .. -DCMAKE_BUILD_TYPE=Release \
-    -DMP12_N=512         \
-    -DMP12_Q=134219777   \
-    -DMP12_B=27          \
-    -DMID_LAMBDA=128
+# Demo parameters (default)
+cd build
+cmake .. -DCMAKE_BUILD_TYPE=Release
 cmake --build . -j
+./LatticeCryBenchmarking
+
+# 128-bit security parameters
+cd build
+cmake .. -DCMAKE_BUILD_TYPE=Release -DUSE_128BIT_PARAMS=ON
+cmake --build . -j
+./LatticeCryBenchmarking
 ```
 
-| Parameter Set | `MP12_N` | `MP12_Q` | `MP12_B` | Use Case |
-|--------------|----------|----------|----------|----------|
-| Demo (default) | 8 | 257 | 2 | Quick smoke test |
-| 100-bit | 256 | ~2²⁵ | 16 | Research prototyping |
-| 128-bit | 512 | 134219777 | 27 | Near-production security |
+**Important**: switching between parameter sets requires a full re-configure + re-build (`cmake .. -DUSE_128BIT_PARAMS=ON && cmake --build . -j`). The `-DUSE_128BIT_PARAMS=ON` flag is a **build-time** option, not a runtime flag. The current parameter set is printed at the top of every run.
 
-To disable unified parameters and use hardcoded fallback values, pass `-DUNIFIED_PARAMS=OFF`.
+**How it works**: CMake injects `LATTICE_128BIT` as a compile definition when `USE_128BIT_PARAMS=ON`. The header [`unified_params_plain-LWE.h`](include_plain-LWE/unified_params_plain-LWE.h) uses `#ifdef LATTICE_128BIT` to select `constexpr` constants. No intermediate generated files, no `__has_include` fragility.
 
 ---
 
@@ -223,7 +227,7 @@ main()
 
 The framework includes two dedicated micro-benchmark suites exercisable from the unified executable. All timings are collected with warm-up and multi-iteration averaging via `std::chrono::high_resolution_clock`.
 
-### Matrix Operations (`bench_matops`)
+### Matrix Operations (`matops`)
 
 Benchmarks [`mat_add`](include/matops.h), [`mat_sub`](include/matops.h), [`mat_mul`](include/matops.h), and [`mat_hcat`](include/matops.h) across six representative lattice-crypto shapes on a commodity x86-64 Linux host (GCC 13, `-O2`).
 
@@ -358,21 +362,25 @@ Mask scheme: 𝒞 = A·R + μ_D·G, each bit of R encrypted via LWE.
 
 ## Configuration
 
-All parameters are injected at **CMake configure time** via the template `include/params_cfg.h.in`, which generates `params_cfg.h` in the build directory. This is read by `include/unified_params.h`.
+Parameters are selected at **CMake configure time** via a single option flag (no template files or generated headers):
 
-| CMake Variable | Default | Description |
-|---------------|---------|-------------|
-| `UNIFIED_PARAMS` | `ON` | Enable `params_cfg.h` generation |
-| `MP12_N` | `8` | Lattice dimension n |
-| `MP12_Q` | `257` | Modulus q |
-| `MP12_B` | `2` | Gadget base b |
-| `MP12_SIGMA` | `1.0` | Trapdoor Gaussian width σ |
-| `UNIENC_SIGMA` | `3.2` | LWE noise width |
-| `MID_LAMBDA` | `8` | Security parameter λ |
-| `MID_N_ID` | `3` | Number of identities N |
-| `MID_D` | `1` | Circuit depth d |
+| CMake Option | Default | Description |
+|-------------|---------|-------------|
+| `USE_128BIT_PARAMS` | `OFF` | Set to `ON` for 128-bit security parameters |
 
-**128-bit parameters**: `cmake .. -DMP12_N=512 -DMP12_Q=134219777 -DMP12_B=27 -DMID_LAMBDA=128`
+The header [`include_plain-LWE/unified_params_plain-LWE.h`](include_plain-LWE/unified_params_plain-LWE.h) uses `#ifdef LATTICE_128BIT` (injected by CMake) to select between two `constexpr` parameter sets:
+
+| Parameter | Demo (`USE_128BIT_PARAMS=OFF`) | 128-bit (`USE_128BIT_PARAMS=ON`) |
+|-----------|-------------------------------|----------------------------------|
+| `n` (lattice dimension) | 8 | 512 |
+| `q` (modulus) | 257 | 134219777 |
+| `b` (gadget base) | 2 | 27 |
+| `σ` (trapdoor Gaussian width) | 1.0 | 1.0 |
+| `s` (preimage Gaussian width) | auto (≈254) | auto (≈18328) |
+| `λ` (security parameter) | 8 | 128 |
+| `m` (total columns of A) | 80 | ~3584 |
+
+See [Build → Parameter Set Selection](#parameter-set-selection) for usage.
 
 ---
 
@@ -382,15 +390,15 @@ All parameters are injected at **CMake configure time** via the template `includ
 |---------|-------|-------------|
 | `ld: undefined reference to run_del_tests` | Stale build after header changes | `rm -rf build && rebuild` |
 | `Element not invertible mod q` | H not in GL_n(Z_q) in DelTrapGen | H must have determinant coprime to q |
-| `"Unknown CMake command 'configure_file'"` | CMake < 3.22 | Upgrade CMake to ≥ 3.22 |
+| `"Unknown CMake command 'configure_file'"` | CMake < 3.22 (legacy) | Upgrade CMake to ≥ 3.22 |
 | `error: 'std::gcd' is not a member of 'std'` | Compiler < C++17 | Use C++20 compiler (GCC ≥ 11) |
 | `-D` parameters not updated after cmake | Stale CMake cache | `rm -rf build && mkdir build && cd build` |
 | `error: no matching function for call to 'make_mat'` (or `'random_mat'`) | Including headers in wrong order; missing `using namespace matops` | Ensure [`matops.h`](include/matops.h) is included; add `using namespace matops;` in test code |
 | `ld: ... undefined reference to 'run_test_*'` | Adding a new test file but not listed in `CMakeLists.txt` | The `file(GLOB DEMO_SRCS src/*.cpp)` in [`CMakeLists.txt`](CMakeLists.txt:49-51) auto-discovers new `.cpp` files — ensure your file is under `src/` and re-run cmake |
 | `error: '__int128' is not supported` | Compiling on 32-bit target or with `-m32` | `__int128` is used for overflow-safe modulus switching in [`powersof_modswitch.h`](include/powersof_modswitch.h); build on x86-64 |
-| `#include "params_cfg.h" not found` | CMake configure step not re-run after branch switch or fresh checkout | Re-run `cmake ..` in the build directory to regenerate the header |
+| Wrong parameter set in use (demo vs 128-bit) | `USE_128BIT_PARAMS` not set or stale CMake cache | Re-run `cmake .. -DUSE_128BIT_PARAMS=ON` to switch; check `n=8` vs `n=512` in output |
 | Segfault in `mat_mul` / `mat_add` with large dimensions | Stack overflow from large `vector<vector<long>>` | Consider bumping `ulimit -s` or switching to heap-allocated matrix storage for n ≥ 1024 |
-| Tests pass at demo params but fail at 128-bit params | q not prime, or σ too small for large n | Use the recommended 128-bit q values (`MP12_Q=134219777`); the current `Params::make` uses heuristic σ based on n·√log q |
+| Tests pass at demo params but fail at 128-bit params | q not prime, or σ too small for large n | The 128-bit q (134219777) is prime; sample_pre_tagged may fail due to large Gaussian width at n=512 — this is expected for demo/test purposes |
 | Output differs between Debug and Release builds | Undefined behavior (uninitialized memory, signed overflow) | Run under `-fsanitize=address,undefined` in Debug mode; the codebase uses `mod_pos()` consistently but check custom math helpers |
 
 ---
@@ -405,7 +413,7 @@ All parameters are injected at **CMake configure time** via the template `includ
 | **C++20 over C++17** | `__int128` in [`powersof_modswitch.h`](include/powersof_modswitch.h) prevents overflow during rounding-based modulus switch. C++20 concepts would allow static assertion of matrix dimension compatibility. |
 | **Zero external dependencies** | The only dependency is the C++ standard library. No NTL, FLINT, or OpenSSL. This guarantees portability and removes ABI compatibility headaches. |
 | **i–k–j loop ordering** | [`matops.h`](include/matops.h) uses i–k–j (middle-product-first) traversal to maximize L1 cache hit rate. For 256×256 matrices, this yields a ~4× speedup over naive i–j–k. |
-| **CMake `configure_file()` for params** | Compile-time parameters are injected via [`params_cfg.h.in`](include/params_cfg.h.in) → `params_cfg.h`. Avoids runtime config parsing and enables compiler constant-propagation optimizations. |
+| **`#ifdef`-based parameter selection** | [`unified_params_plain-LWE.h`](include_plain-LWE/unified_params_plain-LWE.h) uses `#ifdef LATTICE_128BIT` + `constexpr` constants. No intermediate generated files, no `configure_file()`, no `__has_include` fragility. CMake injects the macro via `add_compile_definitions(LATTICE_128BIT)` when `-DUSE_128BIT_PARAMS=ON`. |
 | **Modulus switching via `round_scale`** | Uses `__int128` intermediate to compute `⌊p·x/q⌉` without overflow, critical for correct IBE key extraction when q is large. |
 
 ### Profiling

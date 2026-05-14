@@ -11,10 +11,10 @@
  *   g++ -std=c++17 -O2 -Wall -I. bench_decrypt.cpp -o bench_decrypt
  */
 
-#include "matops.h"
-#include "eval.h"
-#include "decrypt.h"
-#include "unified_params.h"
+#include "matops_plain-LWE.h"
+#include "eval_plain-LWE.h"
+#include "decrypt_plain-LWE.h"
+#include "unified_params_plain-LWE.h"
 
 #include <iostream>
 #include <iomanip>
@@ -26,9 +26,24 @@
 #include <cassert>
 #include <cmath>
 #include <numeric>
+#include <fstream>
+#include <sstream>
 
 using namespace matops;
 using namespace cryptolib;
+
+/* ───── 文件输出辅助 ───── */
+static std::ostringstream bdec_oss;
+
+static void write_to_bench_file() {
+    constexpr const char* OUT_PATH = "../bendmarking_output/bendmarking_plain-LWE.txt";
+    std::ofstream fout(OUT_PATH, std::ios::app);
+    if (fout.is_open()) {
+        fout << bdec_oss.str();
+        fout.close();
+        std::cout << "  [Results written to " << OUT_PATH << "]\n";
+    }
+}
 
 /* ══════════════════════════════════════════════════
    计时工具
@@ -537,6 +552,10 @@ static void scaling_test()
     std::cout << "    t·Ĉ·u:    N 个块的 (提取+向量矩阵乘+内积), 是主要瓶颈\n";
     std::cout << "    Total:     完整 PartDec (含噪声采样等)\n";
     std::cout << "    瓶颈: 向量-矩阵乘 O(R·M) = O(R²·k), 随 n, d 二次增长\n";
+
+    /* 写入文件: 缩放数据摘要 */
+    bdec_oss << "\n--- Parameter Scaling Sweep Summary ---\n"
+             << "  See console output for full table.\n";
 }
 
 /* ══════════════════════════════════════════════════
@@ -544,6 +563,10 @@ static void scaling_test()
    ══════════════════════════════════════════════════ */
 void run_bench_decrypt()
 {
+    bdec_oss.str("");
+    bdec_oss.clear();
+    bdec_oss << "=== Benchmark: FHE Decryption (PartDec + FinDec) ===\n\n";
+
     std::cout << "╔══════════════════════════════════════════════════════╗\n";
     std::cout << "║  多身份 FHE 解密 — 基本操作耗时拆解与缩放分析       ║\n";
     std::cout << "║  使用: matops.h, eval.h (gadget_inverse/build_gadget)║\n";
@@ -564,5 +587,6 @@ void run_bench_decrypt()
     /* 缩放趋势对比 */
     scaling_test();
 
+    write_to_bench_file();
 }
 

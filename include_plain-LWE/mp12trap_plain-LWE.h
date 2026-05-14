@@ -1,9 +1,9 @@
 #ifndef MP12TRAP_H
 #define MP12TRAP_H
 
-#include "mp12.h"
-#include "mp12deltrapgen.h"
-#include "unified_params.h"
+#include "mp12_plain-LWE.h"
+#include "mp12deltrapgen_plain-LWE.h"
+#include "unified_params_plain-LWE.h"
 
 #include <vector>
 

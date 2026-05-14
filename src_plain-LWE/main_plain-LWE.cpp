@@ -9,10 +9,10 @@
  * @author Ziyi Dong, 2026
  */
 
-#include "../include/mp12.h"
-#include "../include/mp12deltrapgen.h"
-#include "../include/mp12trap.h"
-#include "../include/unified_params.h"
+#include "../include_plain-LWE/mp12_plain-LWE.h"
+#include "../include_plain-LWE/mp12deltrapgen_plain-LWE.h"
+#include "../include_plain-LWE/mp12trap_plain-LWE.h"
+#include "../include_plain-LWE/unified_params_plain-LWE.h"
 
 #include <iostream>
 #include <fstream>
@@ -40,7 +40,7 @@ int main() {
     // ── 将参数写入基准测试输出文件 ──
     {
         constexpr const char* OUT_PATH = "../bendmarking_output/bendmarking_plain-LWE.txt";
-        std::ofstream fout(OUT_PATH, std::ios::app);
+        std::ofstream fout(OUT_PATH, std::ios::out);
         if (fout.is_open()) {
             fout << "\n==========================================================\n"
                  << "  LatticeCryBenchmarking — Run Parameters\n"

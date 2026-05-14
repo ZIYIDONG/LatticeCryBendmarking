@@ -14,7 +14,7 @@
  * 最终拼接为长度 k_p + m·k_q 的整数向量(注意:它是定义在 Z_p 上的!)
  */
 
-#include "powersof.h"
+#include "powersof_plain-LWE.h"
 #include <vector>
 #include <cmath>
 #include <stdexcept>

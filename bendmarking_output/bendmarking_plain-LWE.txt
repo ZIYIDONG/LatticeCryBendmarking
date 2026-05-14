@@ -16,33 +16,52 @@
   Warmup rounds : 3
   Timed  rounds : 20
 
-  Average   :    117.2 µs
-  Min       :    103.7 µs
-  Max       :    186.2 µs
-  StdDev    :     22.0 µs
-  Throughput:   8533.7 ops/s
+  Average   :    106.0 µs
+  Min       :     90.6 µs
+  Max       :    209.7 µs
+  StdDev    :     32.5 µs
+  Throughput:   9436.9 ops/s
 
 === Benchmark: DelTrapGen (MP12 §5) ===
   Parameters: n=8, q=257, b=2, k=9, m=80, σ=1
   Warmup rounds : 3
   Timed  rounds : 20
 
-  Average   :     14.7 µs
-  Min       :     14.6 µs
-  Max       :     14.9 µs
-  StdDev    :      0.1 µs
-  Throughput:  67916.1 ops/s
+  Average   :     17.0 µs
+  Min       :     12.0 µs
+  Max       :    109.5 µs
+  StdDev    :     21.8 µs
+  Throughput:  58832.2 ops/s
 
 === Benchmark: SamplePre (tagged, MP12 Algo 2) ===
   Parameters: n=8, q=257, b=2, k=9, m=80, s=254.558
   Warmup rounds : 3
   Timed  rounds : 20
 
-  Average   :     25.1 µs
-  Min       :     19.6 µs
-  Max       :     80.8 µs
-  StdDev    :     13.2 µs
-  Throughput:  39899.3 ops/s
+  Average   :     19.6 µs
+  Min       :     17.7 µs
+  Max       :     20.9 µs
+  StdDev    :      0.9 µs
+  Throughput:  50977.2 ops/s
+
+=== Benchmark: Powersof / BitDecomp ===
+  Parameters: n=8, q=257, b=2, k=9
+  Warmup rounds : 3
+  Timed  rounds : 20
+
+  Powersof_b     Avg=     0.2 µs  Min=     0.2 µs  Max=     0.3 µs  σ=     0.0 µs
+  BitDecomp_b   Avg=     0.1 µs  Min=     0.1 µs  Max=     0.1 µs  σ=     0.0 µs
+
+=== Benchmark: Powersof2 with ModSwitch (IBE keygen) ===
+  Parameters: p=17, q=257, m=8
+  Warmup rounds : 3
+  Timed  rounds : 20
+
+  Average   :      4.4 µs
+  Min       :      0.8 µs
+  Max       :     71.5 µs
+  StdDev    :     15.8 µs
+  Throughput: 228754.4 ops/s
 
 === Benchmark: FRD Encode (ABB10) ===
   Parameters: n=8, q=257
@@ -53,154 +72,77 @@
   Min       :      0.3 µs
   Max       :      0.4 µs
   StdDev    :      0.0 µs
-  Throughput: 2713704.2 ops/s
+  Throughput: 2808988.8 ops/s
+=== Benchmark: Matrix Operations (matops.h) ===
+  API: mat_add / mat_sub / mat_hcat / mat_mul
 
-==========================================================
-  LatticeCryBenchmarking — Run Parameters
-==========================================================
-  n     = 8  (lattice dimension)
-  q     = 257  (modulus)
-  b     = 2  (gadget base)
-  k     = 9  (k = ceil(log_b q))
-  m_bar = 8
-  m     = 80  (total columns of A)
-  sigma = 1  (trapdoor Gaussian width)
-  s     = 254.558  (preimage Gaussian width)
 
-=== Benchmark: GenTrap (MP12 Algorithm 1) ===
-  Parameters: n=8, q=257, b=2, k=9, m=80, σ=1
+--- HIBE Delegation Step Breakdown ---
+  Step 1  T = H_{id}·G       : 8×112    0.023 ms
+  Step 2  B = A_ℓ + T        : 8×112    0.002 ms
+  Step 3  [A_{ℓ-1} || B]    : 8×344  0.003 ms
+  Step 4  H_ℓ·G - B         : 8×112    0.024 ms
+  ─────────────────────────────────────────
+  总耗时(单次委托步骤)   : 0.051 ms
+
+
+=== Benchmark: Matrix Ops Relative Timing (128×128) ===
+  Parameters: q=257
+  add :    0.0283 ms  (基准  1×)
+  sub :    0.0266 ms  (0.94×)
+  hcat:    0.0952 ms  (3.37×)
+  mul :    7.0864 ms  (250.80×)
+
+=== Benchmark: Extend (GSW.LComb) ===
+  Parameters: d=3, N=3, n=8, q=257, R=33, m=6
   Warmup rounds : 3
   Timed  rounds : 20
 
-  Average   :    106.8 µs
-  Min       :     91.5 µs
-  Max       :    185.7 µs
-  StdDev    :     26.7 µs
-  Throughput:   9361.0 ops/s
-
-=== Benchmark: DelTrapGen (MP12 §5) ===
-  Parameters: n=8, q=257, b=2, k=9, m=80, σ=1
-  Warmup rounds : 3
-  Timed  rounds : 20
-
-  Average   :     11.3 µs
-  Min       :     11.2 µs
-  Max       :     11.6 µs
-  StdDev    :      0.1 µs
-  Throughput:  88464.3 ops/s
-
-=== Benchmark: SamplePre (tagged, MP12 Algo 2) ===
-  Parameters: n=8, q=257, b=2, k=9, m=80, s=254.558
-  Warmup rounds : 3
-  Timed  rounds : 20
-
-  Average   :     27.3 µs
-  Min       :     18.2 µs
-  Max       :    123.6 µs
-  StdDev    :     22.8 µs
-  Throughput:  36670.7 ops/s
-
-=== Benchmark: Powersof / BitDecomp ===
-  Parameters: n=8, q=257, b=2, k=9
-  Warmup rounds : 3
-  Timed  rounds : 20
-
-  Powersof_b     Avg=     0.2 µs  Min=     0.2 µs  Max=     0.2 µs  σ=     0.0 µs
-  BitDecomp_b   Avg=     0.1 µs  Min=     0.1 µs  Max=     0.1 µs  σ=     0.0 µs
-
-=== Benchmark: Powersof2 with ModSwitch (IBE keygen) ===
-  Parameters: p=17, q=257, m=8
-  Warmup rounds : 3
-  Timed  rounds : 20
-
-  Average   :      0.6 µs
-  Min       :      0.6 µs
-  Max       :      0.7 µs
+  Average   :      2.5 µs
+  Min       :      2.5 µs
+  Max       :      2.5 µs
   StdDev    :      0.0 µs
-  Throughput: 1549186.7 ops/s
+  Throughput: 405515.0 ops/s
 
-=== Benchmark: FRD Encode (ABB10) ===
-  Parameters: n=8, q=257
+=== Benchmark: Expand (N×N block construction) ===
+  Parameters: d=3, N=3, n=8, q=257, R=33, m=6
   Warmup rounds : 3
   Timed  rounds : 20
 
-  Average   :      0.3 µs
-  Min       :      0.3 µs
-  Max       :      0.4 µs
+  Average   :      8.1 µs
+  Min       :      8.1 µs
+  Max       :      8.2 µs
   StdDev    :      0.0 µs
-  Throughput: 2906976.7 ops/s
+  Throughput: 123532.3 ops/s
 
-==========================================================
-  LatticeCryBenchmarking — Run Parameters
-==========================================================
-  n     = 8  (lattice dimension)
-  q     = 257  (modulus)
-  b     = 2  (gadget base)
-  k     = 9  (k = ceil(log_b q))
-  m_bar = 8
-  m     = 80  (total columns of A)
-  sigma = 1  (trapdoor Gaussian width)
-  s     = 254.558  (preimage Gaussian width)
-
-=== Benchmark: GenTrap (MP12 Algorithm 1) ===
-  Parameters: n=8, q=257, b=2, k=9, m=80, σ=1
-  Warmup rounds : 3
-  Timed  rounds : 20
-
-  Average   :    109.9 µs
-  Min       :     90.7 µs
-  Max       :    251.2 µs
-  StdDev    :     39.4 µs
-  Throughput:   9101.1 ops/s
-
-=== Benchmark: DelTrapGen (MP12 §5) ===
-  Parameters: n=8, q=257, b=2, k=9, m=80, σ=1
-  Warmup rounds : 3
-  Timed  rounds : 20
-
-  Average   :     12.0 µs
-  Min       :     11.9 µs
-  Max       :     12.3 µs
-  StdDev    :      0.1 µs
-  Throughput:  83135.9 ops/s
-
-=== Benchmark: SamplePre (tagged, MP12 Algo 2) ===
-  Parameters: n=8, q=257, b=2, k=9, m=80, s=254.558
-  Warmup rounds : 3
-  Timed  rounds : 20
-
-  Average   :     25.2 µs
-  Min       :     17.8 µs
-  Max       :    126.0 µs
-  StdDev    :     23.8 µs
-  Throughput:  39653.4 ops/s
-
-=== Benchmark: Powersof / BitDecomp ===
-  Parameters: n=8, q=257, b=2, k=9
-  Warmup rounds : 3
-  Timed  rounds : 20
-
-  Powersof_b     Avg=     0.2 µs  Min=     0.2 µs  Max=     0.2 µs  σ=     0.0 µs
-  BitDecomp_b   Avg=     0.1 µs  Min=     0.1 µs  Max=     0.1 µs  σ=     0.0 µs
-
-=== Benchmark: Powersof2 with ModSwitch (IBE keygen) ===
-  Parameters: p=17, q=257, m=8
-  Warmup rounds : 3
-  Timed  rounds : 20
-
-  Average   :      0.7 µs
-  Min       :      0.6 µs
-  Max       :      0.8 µs
-  StdDev    :      0.0 µs
-  Throughput: 1534919.4 ops/s
-
-=== Benchmark: FRD Encode (ABB10) ===
-  Parameters: n=8, q=257
+=== Benchmark: AddEval (GSW homomorphic addition) ===
+  Parameters: q=257, b=2, k=9, r=6, c=54
   Warmup rounds : 3
   Timed  rounds : 20
 
   Average   :      0.4 µs
   Min       :      0.4 µs
-  Max       :      0.5 µs
+  Max       :      0.6 µs
   StdDev    :      0.0 µs
-  Throughput: 2309468.8 ops/s
+  Throughput: 2293578.0 ops/s
+
+=== Benchmark: MultEval (GSW homomorphic multiplication) ===
+  Parameters: q=257, b=2, k=9, r=6, c=54
+  Warmup rounds : 3
+  Timed  rounds : 20
+
+  Average   :     36.7 µs
+  Min       :     33.0 µs
+  Max       :    104.8 µs
+  StdDev    :     16.0 µs
+  Throughput:  27249.3 ops/s
+
+=== Test: Multi-ID Threshold Decryption ===
+  Total tests: 52, Passed: 45, Failed: 7
+  Result: SOME FAIL
+  p (|centered|) mean = 65, max = 128
+=== Benchmark: FHE Decryption (PartDec + FinDec) ===
+
+
+--- Parameter Scaling Sweep Summary ---
+  See console output for full table.

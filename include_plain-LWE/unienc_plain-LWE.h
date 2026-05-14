@@ -23,7 +23,7 @@
  *   ⑥ unienc              — 把 ①–⑤ 串起来
  */
 
-#include "matops.h"
+#include "matops_plain-LWE.h"
 #include <random>
 #include <chrono>
 #include <vector>

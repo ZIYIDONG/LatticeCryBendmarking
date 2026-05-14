@@ -16,7 +16,7 @@
  *     对满足 m = R·k 的 ABE/HIBE 参数自动成立.
  */
 
-#include "matops.h"
+#include "matops_plain-LWE.h"
 #include <vector>
 #include <stdexcept>
 

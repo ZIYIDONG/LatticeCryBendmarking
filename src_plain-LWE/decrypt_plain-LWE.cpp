@@ -14,18 +14,32 @@
  *   g++ -std=c++17 -O2 -Wall -I. test_decrypt.cpp -o test_decrypt
  */
 
-#include "matops.h"
-#include "eval.h"
-#include "decrypt.h"
-#include "unified_params.h"
+#include "matops_plain-LWE.h"
+#include "eval_plain-LWE.h"
+#include "decrypt_plain-LWE.h"
+#include "unified_params_plain-LWE.h"
 #include <iostream>
 #include <iomanip>
 #include <random>
 #include <cassert>
 #include <cmath>
 #include <fstream>
+#include <sstream>
 
 using namespace matops;
+
+/* ───── 文件输出辅助 ───── */
+static std::ostringstream dec_oss;
+
+static void write_to_bench_file() {
+    constexpr const char* OUT_PATH = "../bendmarking_output/bendmarking_plain-LWE.txt";
+    std::ofstream fout(OUT_PATH, std::ios::app);
+    if (fout.is_open()) {
+        fout << dec_oss.str();
+        fout.close();
+        std::cout << "  [Results written to " << OUT_PATH << "]\n";
+    }
+}
 using namespace cryptolib;
 
 /* ═══════════════════════════════════════════════════════════
@@ -423,6 +437,16 @@ void run_test_decrypt(int argc, char** argv) {
               << ",  失败: " << (total_tests - passed_tests) << "\n";
     std::cout << "  " << (passed_tests == total_tests ? "✓ 全部通过!" : "✗ 有失败") << "\n";
     std::cout << "==========================================================\n";
+
+    /* 写入文件 */
+    dec_oss << "\n=== Test: Multi-ID Threshold Decryption ===\n"
+            << "  Total tests: " << total_tests
+            << ", Passed: " << passed_tests
+            << ", Failed: " << (total_tests - passed_tests) << "\n"
+            << "  Result: " << (passed_tests == total_tests ? "ALL PASS" : "SOME FAIL") << "\n"
+            << "  p (|centered|) mean = " << std::fixed << std::setprecision(0) << mean_abs_p
+            << ", max = " << max_abs_p << "\n";
+    write_to_bench_file();
 
 }
 
