@@ -57,10 +57,14 @@ All modules are exercised through a unified test harness with micro-benchmarks f
 ```bash
 git clone git@github.com:ZIYIDONG/LatticeCryBendmarking.git
 cd LatticeCryBendmarking
-mkdir -p build && cd build
-cmake .. -DCMAKE_BUILD_TYPE=Release
-cmake --build . -j
-./LatticeCryBenchmarking
+make plain-demo           # build with demo params (n=8, q=257)
+./build_plain-LWE/LatticeCryBenchmarking
+```
+
+For 128-bit security parameters:
+```bash
+make plain-128            # build with 128-bit params (n=512, q=134219777)
+./build_plain-LWE/LatticeCryBenchmarking
 ```
 
 ---
@@ -119,21 +123,41 @@ LatticeCryBendmarking/
 
 ## Build
 
+A top-level **Makefile** dispatches builds to separate directories per LWE variant
+and parameter set:
+
+```bash
+make plain-demo      # Plain-LWE  demo  (n=8,   q=257)
+make plain-128       # Plain-LWE  128-bit (n=512,  q=134219777)
+make ring-demo       # Ring-LWE   demo  (future)
+make ring-128        # Ring-LWE   128-bit (future)
+make module-demo     # Module-LWE demo  (future)
+make module-128      # Module-LWE 128-bit (future)
+make all-demo        # Build all three with demo params
+make all-128         # Build all three with 128-bit params
+make clean           # Remove all build directories
+```
+
 ### Release Build (Recommended)
 
 ```bash
-rm -rf build && mkdir build && cd build
-cmake .. -DCMAKE_BUILD_TYPE=Release
-cmake --build . -j
-./LatticeCryBenchmarking
+make plain-demo      # demo params (n=8, q=257)
+```
+
+Or manually:
+
+```bash
+cmake -B build_plain-LWE -DCMAKE_BUILD_TYPE=Release
+cmake --build build_plain-LWE -j
+./build_plain-LWE/LatticeCryBenchmarking
 ```
 
 ### Debug Build
 
 ```bash
-cmake .. -DCMAKE_BUILD_TYPE=Debug
-cmake --build . -j
-gdb ./LatticeCryBenchmarking
+cmake -B build_plain-LWE -DCMAKE_BUILD_TYPE=Debug
+cmake --build build_plain-LWE -j
+gdb build_plain-LWE/LatticeCryBenchmarking
 ```
 
 ### Parameter Set Selection
@@ -146,20 +170,11 @@ Two parameter sets are compiled into the binary via a **CMake option** — no te
 | **128-bit** | 512 | 134219777 | 27 | ~3584 | 128 | Near-production security (~5–10 min) |
 
 ```bash
-# Demo parameters (default)
-cd build
-cmake .. -DCMAKE_BUILD_TYPE=Release
-cmake --build . -j
-./LatticeCryBenchmarking
-
-# 128-bit security parameters
-cd build
-cmake .. -DCMAKE_BUILD_TYPE=Release -DUSE_128BIT_PARAMS=ON
-cmake --build . -j
-./LatticeCryBenchmarking
+make plain-demo   # demo params
+make plain-128    # 128-bit security params
 ```
 
-**Important**: switching between parameter sets requires a full re-configure + re-build (`cmake .. -DUSE_128BIT_PARAMS=ON && cmake --build . -j`). The `-DUSE_128BIT_PARAMS=ON` flag is a **build-time** option, not a runtime flag. The current parameter set is printed at the top of every run.
+**Important**: the `-DUSE_128BIT_PARAMS=ON` flag is a **build-time** option, not a runtime flag. Use the `-128` suffixed targets (`make plain-128` etc.) to build with 128-bit parameters. The current parameter set is printed at the top of every run.
 
 **How it works**: CMake injects `LATTICE_128BIT` as a compile definition when `USE_128BIT_PARAMS=ON`. The header [`unified_params_plain-LWE.h`](include_plain-LWE/unified_params_plain-LWE.h) uses `#ifdef LATTICE_128BIT` to select `constexpr` constants. No intermediate generated files, no `__has_include` fragility.
 
@@ -388,11 +403,11 @@ See [Build → Parameter Set Selection](#parameter-set-selection) for usage.
 
 | Symptom | Cause | Resolution |
 |---------|-------|-------------|
-| `ld: undefined reference to run_del_tests` | Stale build after header changes | `rm -rf build && rebuild` |
+| `ld: undefined reference to run_del_tests` | Stale build after header changes | `make clean && make plain` |
 | `Element not invertible mod q` | H not in GL_n(Z_q) in DelTrapGen | H must have determinant coprime to q |
 | `"Unknown CMake command 'configure_file'"` | CMake < 3.22 (legacy) | Upgrade CMake to ≥ 3.22 |
 | `error: 'std::gcd' is not a member of 'std'` | Compiler < C++17 | Use C++20 compiler (GCC ≥ 11) |
-| `-D` parameters not updated after cmake | Stale CMake cache | `rm -rf build && mkdir build && cd build` |
+| `-D` parameters not updated after cmake | Stale CMake cache | `make clean && make plain` |
 | `error: no matching function for call to 'make_mat'` (or `'random_mat'`) | Including headers in wrong order; missing `using namespace matops` | Ensure [`matops.h`](include/matops.h) is included; add `using namespace matops;` in test code |
 | `ld: ... undefined reference to 'run_test_*'` | Adding a new test file but not listed in `CMakeLists.txt` | The `file(GLOB DEMO_SRCS src/*.cpp)` in [`CMakeLists.txt`](CMakeLists.txt:49-51) auto-discovers new `.cpp` files — ensure your file is under `src/` and re-run cmake |
 | `error: '__int128' is not supported` | Compiling on 32-bit target or with `-m32` | `__int128` is used for overflow-safe modulus switching in [`powersof_modswitch.h`](include/powersof_modswitch.h); build on x86-64 |
@@ -422,15 +437,15 @@ For detailed performance analysis, build with `-DCMAKE_BUILD_TYPE=Release` and u
 
 ```bash
 # CPU micro-architecture counters
-perf stat -e cycles,instructions,cache-misses,branches ./build/LatticeCryBenchmarking
+perf stat -e cycles,instructions,cache-misses,branches ./build_plain-LWE/LatticeCryBenchmarking
 
 # Flame graph (hotspot identification)
-perf record -g ./build/LatticeCryBenchmarking
+perf record -g ./build_plain-LWE/LatticeCryBenchmarking
 perf script | stackcollapse-perf.pl | flamegraph.pl > flame.svg
 
 # Cache miss analysis
 perf stat -e L1-dcache-load-misses,L1-dcache-loads,LLC-load-misses,LLC-loads \
-    ./build/LatticeCryBenchmarking
+    ./build_plain-LWE/LatticeCryBenchmarking
 ```
 
 ### Contributing
