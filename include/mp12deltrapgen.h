@@ -487,3 +487,7 @@ inline bool verify_extended(const Mat& A, const Mat& B,
 
 // Entry point that runs all delegated trapdoor tests (defined at file scope in mp12deltrapgen.cpp)
 void run_del_tests(const mp12::Params& p);
+
+// Pure benchmarks for DelTrapGen and SamplePre_tagged (defined in mp12deltrapgen.cpp)
+void bench_del_trap_gen(const mp12::Params& p);
+void bench_sample_pre_tagged(const mp12::Params& p);

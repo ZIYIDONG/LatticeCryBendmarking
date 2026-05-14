@@ -2,9 +2,16 @@
 #include <iostream>
 #include <iomanip>
 #include <random>
+#include <chrono>
+#include <numeric>
+#include <fstream>
+#include <sstream>
 #include "unified_params.h"
 
 using namespace cryptolib;
+
+/* ───── 前向声明 ───── */
+static void bench_powersof();
 
 static void print_vec(const char* label, const Vec& v) {
     std::cout << label << " [";
@@ -161,5 +168,103 @@ void run_test_powersof() {
                   << (1 - sum_balanced / sum_unbalanced) * 100 << "%\n";
     }
 
+    /* ── 纯基准测试 ── */
+    bench_powersof();
+
     std::cout << "\nDone.\n";
+}
+
+/* ───────────────────────────────────────────────────
+   文件输出辅助
+   ─────────────────────────────────────────────────── */
+static void write_to_bench_file(const std::string& content) {
+    constexpr const char* OUT_PATH = "../bendmarking_output/bendmarking_plain-LWE.txt";
+    std::ofstream fout(OUT_PATH, std::ios::app);
+    if (fout.is_open()) {
+        fout << content;
+        fout.close();
+        std::cout << "  [Results written to " << OUT_PATH << "]\n";
+    } else {
+        std::cerr << "  [WARN] Could not open " << OUT_PATH << " for writing\n";
+    }
+}
+
+/* ───────────────────────────────────────────────────
+   Benchmark: Powersof / BitDecomp 纯耗时
+   ─────────────────────────────────────────────────── */
+static void bench_powersof() {
+    using Clock = std::chrono::high_resolution_clock;
+    constexpr int WARMUP  = 3;
+    constexpr int ITERS   = 20;
+
+    auto __u_p = unified::default_mp12_params();
+    long q = __u_p.q;
+    int  b = __u_p.b;
+    int  k = compute_k(q, b);
+    int  n = 8;
+
+    std::mt19937_64 rng(0);
+    std::uniform_int_distribution<long> dist(0, q - 1);
+
+    Vec v(n);
+    for (int i = 0; i < n; ++i) v[i] = dist(rng);
+
+    /* ── 预热 ── */
+    for (int i = 0; i < WARMUP; ++i) {
+        (void)powers_of_b_vec(v, b, q);
+        (void)bit_decomp_vec(v, b, q);
+    }
+
+    /* ── Powersof 计时 ── */
+    std::vector<double> times_po, times_bd;
+    times_po.reserve(ITERS);
+    times_bd.reserve(ITERS);
+    for (int i = 0; i < ITERS; ++i) {
+        Vec vi(n);
+        for (int j = 0; j < n; ++j) vi[j] = dist(rng);
+
+        auto t0 = Clock::now();
+        (void)powers_of_b_vec(vi, b, q);
+        auto t1 = Clock::now();
+        times_po.push_back(std::chrono::duration<double, std::micro>(t1 - t0).count());
+
+        auto t2 = Clock::now();
+        (void)bit_decomp_vec(vi, b, q);
+        auto t3 = Clock::now();
+        times_bd.push_back(std::chrono::duration<double, std::micro>(t3 - t2).count());
+    }
+
+    auto stats = [&](const std::vector<double>& tv) {
+        double s = std::accumulate(tv.begin(), tv.end(), 0.0);
+        double a = s / ITERS;
+        double mn = *std::min_element(tv.begin(), tv.end());
+        double mx = *std::max_element(tv.begin(), tv.end());
+        double vv = 0;
+        for (double t : tv) { double d = t - a; vv += d * d; }
+        vv /= (ITERS > 1) ? (ITERS - 1) : 1;
+        return std::make_tuple(a, mn, mx, std::sqrt(vv));
+    };
+
+    auto [avg_po, min_po, max_po, std_po] = stats(times_po);
+    auto [avg_bd, min_bd, max_bd, std_bd] = stats(times_bd);
+
+    std::ostringstream oss;
+    oss << "\n=== Benchmark: Powersof / BitDecomp ===\n"
+        << "  Parameters: n=" << n << ", q=" << q
+        << ", b=" << b << ", k=" << k << "\n"
+        << "  Warmup rounds : " << WARMUP << "\n"
+        << "  Timed  rounds : " << ITERS << "\n\n"
+        << std::fixed << std::setprecision(1)
+        << "  Powersof_b     Avg=" << std::setw(8) << avg_po
+        << " µs  Min=" << std::setw(8) << min_po
+        << " µs  Max=" << std::setw(8) << max_po
+        << " µs  σ=" << std::setw(8) << std_po << " µs\n"
+        << "  BitDecomp_b   Avg=" << std::setw(8) << avg_bd
+        << " µs  Min=" << std::setw(8) << min_bd
+        << " µs  Max=" << std::setw(8) << max_bd
+        << " µs  σ=" << std::setw(8) << std_bd << " µs\n";
+
+    std::cout << "\n--- Benchmark: Powersof / BitDecomp ---\n";
+    std::cout << oss.str();
+    write_to_bench_file(oss.str());
 }

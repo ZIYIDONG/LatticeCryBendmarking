@@ -15,8 +15,7 @@
 #include "../include/unified_params.h"
 
 #include <iostream>
-
-using namespace mp12;
+#include <fstream>
 
 int main() {
     // ── 横幅 ──
@@ -38,6 +37,27 @@ int main() {
               << "  sigma = " << p.sigma << "  (trapdoor Gaussian width)\n"
               << "  s = " << p.s << "  (preimage Gaussian width)\n";
 
+    // ── 将参数写入基准测试输出文件 ──
+    {
+        constexpr const char* OUT_PATH = "../bendmarking_output/bendmarking_plain-LWE.txt";
+        std::ofstream fout(OUT_PATH, std::ios::app);
+        if (fout.is_open()) {
+            fout << "\n==========================================================\n"
+                 << "  LatticeCryBenchmarking — Run Parameters\n"
+                 << "==========================================================\n"
+                 << "  n     = " << p.n   << "  (lattice dimension)\n"
+                 << "  q     = " << p.q   << "  (modulus)\n"
+                 << "  b     = " << p.b   << "  (gadget base)\n"
+                 << "  k     = " << p.k   << "  (k = ceil(log_b q))\n"
+                 << "  m_bar = " << p.m_bar << "\n"
+                 << "  m     = " << p.m   << "  (total columns of A)\n"
+                 << "  sigma = " << p.sigma << "  (trapdoor Gaussian width)\n"
+                 << "  s     = " << p.s   << "  (preimage Gaussian width)\n";
+            fout.close();
+            std::cout << "  [Parameters written to " << OUT_PATH << "]\n";
+        }
+    }
+
     // ── 基础 MP12 陷门测试（Test 1–7）──
     run_mp12_trap_tests(p);
 
@@ -49,7 +69,6 @@ int main() {
     run_test_powersof();
     run_test_powersof_modswitch();
     run_test_frd();
-    run_debug_frd();
     run_bench_matops();
     run_test_expand();
     run_test_eval();

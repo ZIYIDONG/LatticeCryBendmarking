@@ -5,9 +5,16 @@
 #include <cmath>
 #include <stdexcept>
 #include <string>
+#include <chrono>
+#include <numeric>
+#include <fstream>
+#include <sstream>
 #include "unified_params.h"
 
 using namespace cryptolib;
+
+/* ───── 前向声明 ───── */
+static void bench_powersof_modswitch();
 
 static void print_vec(const char* label, const Vec& v, int maxshow = 16) {
     std::cout << label << " [";
@@ -199,5 +206,88 @@ void run_test_powersof_modswitch() {
         std::cout << "第二段全 0: " << (all_zero ? "PASS" : "FAIL") << "\n";
     }
 
+    /* ── 纯基准测试 ── */
+    bench_powersof_modswitch();
+
     std::cout << "\nDone.\n";
+}
+
+/* ───────────────────────────────────────────────────
+   文件输出辅助
+   ─────────────────────────────────────────────────── */
+static void write_to_bench_file(const std::string& content) {
+    constexpr const char* OUT_PATH = "../bendmarking_output/bendmarking_plain-LWE.txt";
+    std::ofstream fout(OUT_PATH, std::ios::app);
+    if (fout.is_open()) {
+        fout << content;
+        fout.close();
+        std::cout << "  [Results written to " << OUT_PATH << "]\n";
+    } else {
+        std::cerr << "  [WARN] Could not open " << OUT_PATH << " for writing\n";
+    }
+}
+
+/* ───────────────────────────────────────────────────
+   Benchmark: Powersof2 with modulus switch 纯耗时
+   ─────────────────────────────────────────────────── */
+static void bench_powersof_modswitch() {
+    using Clock = std::chrono::high_resolution_clock;
+    constexpr int WARMUP  = 3;
+    constexpr int ITERS   = 20;
+
+    auto __u_p = unified::default_mp12_params();
+    long q = __u_p.q;
+    long p = 17;
+    int  m = 8;
+
+    std::mt19937_64 rng(42);
+    std::uniform_int_distribution<long> dist_e(-3, 3);
+    Vec e0(m);
+    for (int i = 0; i < m; ++i) e0[i] = dist_e(rng);
+
+    /* ── 预热 ── */
+    for (int i = 0; i < WARMUP; ++i) {
+        (void)powers_of_2_with_modswitch(e0, p, q, true);
+    }
+
+    /* ── 计时 ── */
+    std::vector<double> times_us;
+    times_us.reserve(ITERS);
+    for (int i = 0; i < ITERS; ++i) {
+        Vec e(m);
+        for (int j = 0; j < m; ++j) e[j] = dist_e(rng);
+        auto t0 = Clock::now();
+        (void)powers_of_2_with_modswitch(e, p, q, true);
+        auto t1 = Clock::now();
+        double us = std::chrono::duration<double, std::micro>(t1 - t0).count();
+        times_us.push_back(us);
+    }
+
+    /* ── 统计 ── */
+    double sum_us = std::accumulate(times_us.begin(), times_us.end(), 0.0);
+    double avg_us = sum_us / ITERS;
+    double min_us = *std::min_element(times_us.begin(), times_us.end());
+    double max_us = *std::max_element(times_us.begin(), times_us.end());
+    double var_us = 0.0;
+    for (double t : times_us) { double d = t - avg_us; var_us += d * d; }
+    var_us /= (ITERS > 1) ? (ITERS - 1) : 1;
+    double std_us = std::sqrt(var_us);
+
+    std::ostringstream oss;
+    oss << "\n=== Benchmark: Powersof2 with ModSwitch (IBE keygen) ===\n"
+        << "  Parameters: p=" << p << ", q=" << q
+        << ", m=" << m << "\n"
+        << "  Warmup rounds : " << WARMUP << "\n"
+        << "  Timed  rounds : " << ITERS << "\n\n"
+        << std::fixed << std::setprecision(1)
+        << "  Average   : " << std::setw(8) << avg_us << " µs\n"
+        << "  Min       : " << std::setw(8) << min_us << " µs\n"
+        << "  Max       : " << std::setw(8) << max_us << " µs\n"
+        << "  StdDev    : " << std::setw(8) << std_us << " µs\n"
+        << "  Throughput: " << std::setw(8)
+        << (1e6 / avg_us) << " ops/s\n";
+
+    std::cout << "\n--- Benchmark: Powersof2 ModSwitch ---\n";
+    std::cout << oss.str();
+    write_to_bench_file(oss.str());
 }

@@ -93,10 +93,9 @@ LatticeCryBendmarking/
     ├── main.cpp                    # Single entry point — runs all tests & benchmarks
     ├── mp12trap.cpp                # MP12 trapdoor test suite (Tests 1–7)
     ├── mp12deltrapgen.cpp          # Delegated trapdoor test suite (Tests 8–11)
-    ├── test_powersof.cpp           # Powersof / BitDecomp tests
-    ├── test_powersof_modswitch.cpp # Modulus switching tests
-    ├── test_frd.cpp                # FRD correctness & invertibility tests
-    ├── debug_frd.cpp               # FRD debug tooling
+    ├── powersof.cpp                # Powersof / BitDecomp tests
+    ├── powersof_modswitch.cpp      # Modulus switching tests
+    ├── frd.cpp                     # FRD correctness & invertibility tests
     ├── bench_matops.cpp            # Matrix operations performance benchmark
     ├── test_expand.cpp             # Ciphertext expansion tests
     ├── test_eval.cpp               # Homomorphic evaluation tests

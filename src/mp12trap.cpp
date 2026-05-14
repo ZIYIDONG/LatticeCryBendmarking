@@ -8,6 +8,8 @@
 #include <cmath>
 #include <chrono>
 #include <algorithm>
+#include <numeric>
+#include <fstream>
 
 using namespace mp12;
 
@@ -36,14 +38,14 @@ static void print_mat(const char* label, const Mat& M,
     if ((int)M.size() > r) std::cout << "  ...\n";
 }
 
-double mp12::vec_norm(const Vec& v) {
+double vec_norm(const Vec& v) {
     double s = 0;
     for (auto x : v) s += (double)x * x;
     return std::sqrt(s);
 }
 
 /* ─────────────────────── tests ─────────────────────── */
-void mp12::test_gadget(const Params& p) {
+void test_gadget(const Params& p) {
     std::cout << "\n=== Test 1: Gadget Matrix G ===\n";
     Mat G = gadget_matrix(p);
     print_mat("G", G);
@@ -61,7 +63,7 @@ void mp12::test_gadget(const Params& p) {
     std::cout << "Gadget structure check: " << (ok ? "PASS" : "FAIL") << "\n";
 }
 
-void mp12::test_gadget_basis(const Params& p) {
+void test_gadget_basis(const Params& p) {
     std::cout << "\n=== Test 2: Gadget Basis S_g ===\n";
     Mat Sg = gadget_basis(p);
     print_mat("S_g (first block)", Sg, p.k, p.k);
@@ -76,7 +78,7 @@ void mp12::test_gadget_basis(const Params& p) {
     std::cout << "G · S_g = 0 (mod q): " << (all_zero ? "PASS" : "FAIL") << "\n";
 }
 
-void mp12::test_sample_g(const Params& p) {
+void test_sample_g(const Params& p) {
     std::cout << "\n=== Test 3: SampleG (G-lattice short preimage) ===\n";
     UniformSampler usampler(p.q, 42);
     int trials = 20, pass = 0;
@@ -100,7 +102,7 @@ void mp12::test_sample_g(const Params& p) {
               << avg_norm << "\n";
 }
 
-void mp12::test_gen_trap(const Params& p) {
+void test_gen_trap(const Params& p) {
     std::cout << "\n=== Test 4: GenTrap ===\n";
     auto t0 = std::chrono::high_resolution_clock::now();
     Trapdoor td = gen_trap(p, 123);
@@ -130,7 +132,7 @@ void mp12::test_gen_trap(const Params& p) {
     std::cout << "A · [R; I] = G (mod q): " << (ok ? "PASS" : "FAIL") << "\n";
 }
 
-void mp12::test_sample_pre(const Params& p) {
+void test_sample_pre(const Params& p) {
     std::cout << "\n=== Test 5: SamplePre (full round-trip) ===\n";
     Trapdoor td = gen_trap(p, 999);
     UniformSampler usampler(p.q, 77);
@@ -165,7 +167,7 @@ void mp12::test_sample_pre(const Params& p) {
     std::cout << "Gaussian width s = " << p.s << "\n";
 }
 
-void mp12::test_uniformity(const Params& p) {
+void test_uniformity(const Params& p) {
     std::cout << "\n=== Test 6: A distribution (uniformity check) ===\n";
     // Generate several As and check column averages ≈ q/2
     int num = 5;
@@ -185,7 +187,7 @@ void mp12::test_uniformity(const Params& p) {
     std::cout << "Uniformity check: " << (rel_err < 5.0 ? "PASS" : "WARN") << "\n";
 }
 
-void mp12::test_full_roundtrip_large(const Params& p2) {
+void test_full_roundtrip_large(const Params& p2) {
     std::cout << "\n\n=== Larger params: n=16, q=8209 ===\n";
     std::cout << "  m = " << p2.m << ",  k = " << p2.k << "\n";
     Trapdoor td2 = gen_trap(p2, 42);
@@ -198,11 +200,94 @@ void mp12::test_full_roundtrip_large(const Params& p2) {
     std::cout << "  ||x|| = " << std::fixed << std::setprecision(1) << vec_norm(x2) << "\n";
 }
 
-void mp12::run_mp12_trap_tests(const Params& p) {
+/* ─────────────────── GenTrap 纯基准测试 ─────────────────── */
+/**
+ * bench_gen_trap — 纯粹测量 gen_trap() 的耗时
+ *
+ *   ① 预热: 3 次（不计入统计），消除 CPU 频率抖动和缓存冷启动干扰
+ *   ② 计时: 20 次独立 gen_trap 调用，使用不同 seed
+ *   ③ 统计: 平均 / 最差 / 最优 / 标准差（微秒）
+ *
+ *   不包含 Params 构造开销（由调用方传入已构造好的参数）
+ */
+void bench_gen_trap(const Params& p) {
+    using Clock = std::chrono::high_resolution_clock;
+    constexpr int WARMUP  = 3;
+    constexpr int ITERS   = 20;
+
+    /* ── 预热 ── */
+    for (int i = 0; i < WARMUP; ++i) {
+        (void)gen_trap(p, (uint64_t)(i + 1) * 999983);
+    }
+
+    /* ── 计时 ── */
+    std::vector<double> times_us;
+    times_us.reserve(ITERS);
+
+    for (int i = 0; i < ITERS; ++i) {
+        auto t0 = Clock::now();
+        Trapdoor td = gen_trap(p, (uint64_t)(i + 1) * 7368787);
+        auto t1 = Clock::now();
+        double us = std::chrono::duration<double, std::micro>(t1 - t0).count();
+        times_us.push_back(us);
+    }
+
+    /* ── 统计 ── */
+    double sum_us = std::accumulate(times_us.begin(), times_us.end(), 0.0);
+    double avg_us = sum_us / ITERS;
+    double min_us = *std::min_element(times_us.begin(), times_us.end());
+    double max_us = *std::max_element(times_us.begin(), times_us.end());
+
+    double var_us = 0.0;
+    for (double t : times_us) { double d = t - avg_us; var_us += d * d; }
+    var_us /= (ITERS > 1) ? (ITERS - 1) : 1;
+    double std_us = std::sqrt(var_us);
+
+    /* ── 控制台输出 ── */
+    std::cout << "\n=== Benchmark: GenTrap (MP12 Algorithm 1) ===\n"
+              << "  Parameters: n=" << p.n << ", q=" << p.q
+              << ", b=" << p.b << ", k=" << p.k
+              << ", m=" << p.m << ", σ=" << p.sigma << "\n"
+              << "  Warmup rounds : " << WARMUP << "\n"
+              << "  Timed  rounds : " << ITERS << "\n\n"
+              << std::fixed << std::setprecision(1)
+              << "  Average   : " << std::setw(8) << avg_us << " µs\n"
+              << "  Min       : " << std::setw(8) << min_us << " µs\n"
+              << "  Max       : " << std::setw(8) << max_us << " µs\n"
+              << "  StdDev    : " << std::setw(8) << std_us << " µs\n"
+              << "  Throughput: " << std::setw(8)
+              << (1e6 / avg_us) << " ops/s\n";
+
+    /* ── 文件输出 ── */
+    constexpr const char* OUT_PATH = "../bendmarking_output/bendmarking_plain-LWE.txt";
+    std::ofstream fout(OUT_PATH, std::ios::app);
+    if (fout.is_open()) {
+        fout << "\n=== Benchmark: GenTrap (MP12 Algorithm 1) ===\n"
+             << "  Parameters: n=" << p.n << ", q=" << p.q
+             << ", b=" << p.b << ", k=" << p.k
+             << ", m=" << p.m << ", σ=" << p.sigma << "\n"
+             << "  Warmup rounds : " << WARMUP << "\n"
+             << "  Timed  rounds : " << ITERS << "\n\n"
+             << std::fixed << std::setprecision(1)
+             << "  Average   : " << std::setw(8) << avg_us << " µs\n"
+             << "  Min       : " << std::setw(8) << min_us << " µs\n"
+             << "  Max       : " << std::setw(8) << max_us << " µs\n"
+             << "  StdDev    : " << std::setw(8) << std_us << " µs\n"
+             << "  Throughput: " << std::setw(8)
+             << (1e6 / avg_us) << " ops/s\n";
+        fout.close();
+        std::cout << "  [Results written to " << OUT_PATH << "]\n";
+    } else {
+        std::cerr << "  [WARN] Could not open " << OUT_PATH << " for writing\n";
+    }
+}
+
+void run_mp12_trap_tests(const Params& p) {
     test_gadget(p);
     test_gadget_basis(p);
     test_sample_g(p);
     test_gen_trap(p);
+    bench_gen_trap(p);
     test_sample_pre(p);
     test_uniformity(p);
     test_full_roundtrip_large(p);

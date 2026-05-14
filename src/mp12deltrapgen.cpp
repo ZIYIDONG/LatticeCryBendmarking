@@ -16,6 +16,9 @@
 #include <cmath>
 #include <chrono>
 #include <string>
+#include <numeric>
+#include <fstream>
+#include <sstream>
 
 using namespace mp12;
 
@@ -371,6 +374,161 @@ void test_ibe_simulation(const Params& p) {
     }
 }
 
+/* ───────────────────────────────────────────────────
+   文件输出辅助：将单条 benchmark 结果追加写入文件
+   ─────────────────────────────────────────────────── */
+static void write_to_bench_file(const std::string& content) {
+    constexpr const char* OUT_PATH = "../bendmarking_output/bendmarking_plain-LWE.txt";
+    std::ofstream fout(OUT_PATH, std::ios::app);
+    if (fout.is_open()) {
+        fout << content;
+        fout.close();
+        std::cout << "  [Results written to " << OUT_PATH << "]\n";
+    } else {
+        std::cerr << "  [WARN] Could not open " << OUT_PATH << " for writing\n";
+    }
+}
+
+/* ───────────────────────────────────────────────────
+   Benchmark 1: DelTrapGen 纯耗时
+   ─────────────────────────────────────────────────── */
+/**
+ * bench_del_trap_gen — 纯粹测量 del_trap_gen() 的耗时
+ *
+ *   ① 生成基础陷门（不计入时间）
+ *   ② 预热 3 轮
+ *   ③ 20 轮计时（不同随机 tag H  + 不同 seed）
+ *   ④ 统计：平均 / 最小 / 最大 / 标准差（µs）
+ */
+void bench_del_trap_gen(const Params& p) {
+    using Clock = std::chrono::high_resolution_clock;
+    constexpr int WARMUP  = 3;
+    constexpr int ITERS   = 20;
+
+    /* ── 基础陷门（一次性，不计入时间）── */
+    Trapdoor base = gen_trap(p, 42);
+
+    /* ── 预热 ── */
+    for (int i = 0; i < WARMUP; ++i) {
+        Mat H = random_invertible_mat(p.n, p.q, (uint64_t)(i + 1) * 100003);
+        (void)del_trap_gen(p, base, H);
+    }
+
+    /* ── 计时 ── */
+    std::vector<double> times_us;
+    times_us.reserve(ITERS);
+    for (int i = 0; i < ITERS; ++i) {
+        Mat H = random_invertible_mat(p.n, p.q, (uint64_t)(i + 1) * 500009);
+        auto t0 = Clock::now();
+        (void)del_trap_gen(p, base, H);
+        auto t1 = Clock::now();
+        double us = std::chrono::duration<double, std::micro>(t1 - t0).count();
+        times_us.push_back(us);
+    }
+
+    /* ── 统计 ── */
+    double sum_us = std::accumulate(times_us.begin(), times_us.end(), 0.0);
+    double avg_us = sum_us / ITERS;
+    double min_us = *std::min_element(times_us.begin(), times_us.end());
+    double max_us = *std::max_element(times_us.begin(), times_us.end());
+    double var_us = 0.0;
+    for (double t : times_us) { double d = t - avg_us; var_us += d * d; }
+    var_us /= (ITERS > 1) ? (ITERS - 1) : 1;
+    double std_us = std::sqrt(var_us);
+
+    /* ── 格式化输出 ── */
+    std::ostringstream oss;
+    oss << "\n=== Benchmark: DelTrapGen (MP12 §5) ===\n"
+        << "  Parameters: n=" << p.n << ", q=" << p.q
+        << ", b=" << p.b << ", k=" << p.k
+        << ", m=" << p.m << ", σ=" << p.sigma << "\n"
+        << "  Warmup rounds : " << WARMUP << "\n"
+        << "  Timed  rounds : " << ITERS << "\n\n"
+        << std::fixed << std::setprecision(1)
+        << "  Average   : " << std::setw(8) << avg_us << " µs\n"
+        << "  Min       : " << std::setw(8) << min_us << " µs\n"
+        << "  Max       : " << std::setw(8) << max_us << " µs\n"
+        << "  StdDev    : " << std::setw(8) << std_us << " µs\n"
+        << "  Throughput: " << std::setw(8)
+        << (1e6 / avg_us) << " ops/s\n";
+
+    std::cout << oss.str();
+    write_to_bench_file(oss.str());
+}
+
+/* ───────────────────────────────────────────────────
+   Benchmark 2: SamplePre（带 tag）纯耗时
+   ─────────────────────────────────────────────────── */
+/**
+ * bench_sample_pre_tagged — 纯粹测量 sample_pre_tagged() 的耗时
+ *
+ *   ① 生成基础陷门 + 委托生成 tagged 陷门（不计入时间）
+ *   ② 预热 3 轮（含随机目标 u）
+ *   ③ 20 轮计时
+ *   ④ 统计：平均 / 最小 / 最大 / 标准差（µs）
+ */
+void bench_sample_pre_tagged(const Params& p) {
+    using Clock = std::chrono::high_resolution_clock;
+    constexpr int WARMUP  = 3;
+    constexpr int ITERS   = 20;
+
+    /* ── 建立 tagged 陷门（一次性，不计入时间）── */
+    Trapdoor base = gen_trap(p, 100);
+    Mat H_tag = random_invertible_mat(p.n, p.q, 999);
+    auto td_H = del_trap_gen(p, base, H_tag);
+
+    UniformSampler usampler(p.q, 55);
+
+    /* ── 预热 ── */
+    for (int i = 0; i < WARMUP; ++i) {
+        Vec u(p.n);
+        for (int j = 0; j < p.n; ++j) u[j] = usampler.sample();
+        (void)sample_pre_tagged(p, td_H, u, (uint64_t)(i + 1) * 200003);
+    }
+
+    /* ── 计时 ── */
+    std::vector<double> times_us;
+    times_us.reserve(ITERS);
+    for (int i = 0; i < ITERS; ++i) {
+        Vec u(p.n);
+        for (int j = 0; j < p.n; ++j) u[j] = usampler.sample();
+        auto t0 = Clock::now();
+        (void)sample_pre_tagged(p, td_H, u, (uint64_t)(i + 1) * 700001);
+        auto t1 = Clock::now();
+        double us = std::chrono::duration<double, std::micro>(t1 - t0).count();
+        times_us.push_back(us);
+    }
+
+    /* ── 统计 ── */
+    double sum_us = std::accumulate(times_us.begin(), times_us.end(), 0.0);
+    double avg_us = sum_us / ITERS;
+    double min_us = *std::min_element(times_us.begin(), times_us.end());
+    double max_us = *std::max_element(times_us.begin(), times_us.end());
+    double var_us = 0.0;
+    for (double t : times_us) { double d = t - avg_us; var_us += d * d; }
+    var_us /= (ITERS > 1) ? (ITERS - 1) : 1;
+    double std_us = std::sqrt(var_us);
+
+    /* ── 格式化输出 ── */
+    std::ostringstream oss;
+    oss << "\n=== Benchmark: SamplePre (tagged, MP12 Algo 2) ===\n"
+        << "  Parameters: n=" << p.n << ", q=" << p.q
+        << ", b=" << p.b << ", k=" << p.k
+        << ", m=" << p.m << ", s=" << p.s << "\n"
+        << "  Warmup rounds : " << WARMUP << "\n"
+        << "  Timed  rounds : " << ITERS << "\n\n"
+        << std::fixed << std::setprecision(1)
+        << "  Average   : " << std::setw(8) << avg_us << " µs\n"
+        << "  Min       : " << std::setw(8) << min_us << " µs\n"
+        << "  Max       : " << std::setw(8) << max_us << " µs\n"
+        << "  StdDev    : " << std::setw(8) << std_us << " µs\n"
+        << "  Throughput: " << std::setw(8)
+        << (1e6 / avg_us) << " ops/s\n";
+
+    std::cout << oss.str();
+    write_to_bench_file(oss.str());
+}
+
 /* ════════════════════ main ════════════════════════ */
 void run_del_tests(const mp12::Params& p) {
     std::cout << "╔══════════════════════════════════════════════╗\n";
@@ -387,6 +545,8 @@ void run_del_tests(const mp12::Params& p) {
     test_sample_left(p);
     test_sample_right(p);
     test_ibe_simulation(p);
+    bench_del_trap_gen(p);
+    bench_sample_pre_tagged(p);
 
     // 算法结构汇总
     section("算法结构汇总");

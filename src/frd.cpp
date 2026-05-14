@@ -3,9 +3,15 @@
 #include <iomanip>
 #include <random>
 #include <chrono>
+#include <numeric>
+#include <fstream>
+#include <sstream>
 #include "unified_params.h"
 
 using namespace cryptolib;
+
+/* ───── 前向声明 ───── */
+static void bench_frd_encode();
 
 /* ───── 矩阵打印 ───── */
 static void print_mat(const char* label, const Mat& M, int q = 0) {
@@ -57,10 +63,46 @@ static Mat mat_sub(const Mat& A, const Mat& B, long q) {
     return R;
 }
 
+/* ───── Debug: 手动验证 Rabin 不可约性测试 ───── */
+static void debug_irreducible_check() {
+    auto __u_p = unified::default_mp12_params(); long q = __u_p.q;
+
+    // F_7 上 x^2 + 1 是不是不可约? 7 mod 4 == 3, 所以 -1 不是 QR
+    Vec f1 = {1, 0, 1};   // 1 + 0·x + x^2 = x^2 + 1
+    std::cout << "\n--- Debug: 不可约多项式手动验证 (F_" << q << ") ---\n";
+    std::cout << "f = x^2 + 1, deg = " << poly_deg(f1) << "\n";
+    std::cout << "is_irreducible(x^2+1, F_" << q << ") = " << is_irreducible(f1, q) << "\n";
+
+    // F_7 上 x^2 - 2 = x^2 + 5 (因为 -2 mod 7 = 5)
+    Vec f2 = {5, 0, 1};
+    std::cout << "f2 = x^2 + 5, is_irreducible? " << is_irreducible(f2, q) << "\n";
+
+    // x^2 + x + 3
+    Vec f3 = {3, 1, 1};
+    std::cout << "f3 = x^2 + x + 3, is_irreducible? " << is_irreducible(f3, q) << "\n";
+
+    // 穷举搜索所有 monic 二次不可约多项式
+    int count = 0;
+    for (long c = 0; c < q; c++) {
+        for (long b = 0; b < q; b++) {
+            Vec f = {c, b, 1};
+            if (is_irreducible(f, q)) {
+                if (count < 6)  // 只打印前 6 个避免刷屏
+                    std::cout << "found: x^2 + " << b << "x + " << c << "\n";
+                count++;
+            }
+        }
+    }
+    std::cout << "Total irreducible monic quadratics found: " << count << "/" << (q * q) << "\n";
+}
+
 void run_test_frd() {
     std::cout << "================================================\n";
     std::cout << "  FRD: Full-Rank Difference Encoding (ABB10)\n";
     std::cout << "================================================\n";
+
+    /* ── Debug 验证 ── */
+    debug_irreducible_check();
 
     /* ───── Test 1: 找不可约多项式 ───── */
     std::cout << "\n--- Test 1: 寻找 F_q 上 n 次不可约多项式 ---\n";
@@ -225,7 +267,99 @@ void run_test_frd() {
         std::cout << "  平均每次: " << (ms / N) * 1000 << " µs\n";
     }
 
+    /* ── 纯基准测试 ── */
+    bench_frd_encode();
+
     std::cout << "\nDone.\n";
+}
+
+/* ───────────────────────────────────────────────────
+   文件输出辅助：将单条 benchmark 结果追加写入文件
+   ─────────────────────────────────────────────────── */
+static void write_to_bench_file(const std::string& content) {
+    constexpr const char* OUT_PATH = "../bendmarking_output/bendmarking_plain-LWE.txt";
+    std::ofstream fout(OUT_PATH, std::ios::app);
+    if (fout.is_open()) {
+        fout << content;
+        fout.close();
+        std::cout << "  [Results written to " << OUT_PATH << "]\n";
+    } else {
+        std::cerr << "  [WARN] Could not open " << OUT_PATH << " for writing\n";
+    }
+}
+
+/* ───────────────────────────────────────────────────
+   Benchmark: FRD 编码 纯耗时
+   ─────────────────────────────────────────────────── */
+/**
+ * bench_frd_encode — 纯粹测量 frd_encode() 的耗时
+ *
+ *   ① 预先构造 FRDContext（不计入时间）
+ *   ② 预热 3 轮
+ *   ③ 20 轮计时（每轮随机 id）
+ *   ④ 统计：平均 / 最小 / 最大 / 标准差（µs）
+ */
+void bench_frd_encode() {
+    using Clock = std::chrono::high_resolution_clock;
+    constexpr int WARMUP  = 3;
+    constexpr int ITERS   = 20;
+
+    auto __u_p = unified::default_mp12_params();
+    long q = __u_p.q;
+    int  n = 8;
+
+    /* ── 预先构造 FRDContext（不计入时间）── */
+    auto ctx = FRDContext::setup(n, q, 11);
+    std::mt19937_64 rng(0);
+    std::uniform_int_distribution<long> dist(0, q - 1);
+
+    /* ── 预热 ── */
+    for (int i = 0; i < WARMUP; ++i) {
+        Vec id(n);
+        for (int j = 0; j < n; ++j) id[j] = dist(rng);
+        (void)frd_encode(ctx, id);
+    }
+
+    /* ── 计时 ── */
+    std::vector<double> times_us;
+    times_us.reserve(ITERS);
+    for (int i = 0; i < ITERS; ++i) {
+        Vec id(n);
+        for (int j = 0; j < n; ++j) id[j] = dist(rng);
+        auto t0 = Clock::now();
+        (void)frd_encode(ctx, id);
+        auto t1 = Clock::now();
+        double us = std::chrono::duration<double, std::micro>(t1 - t0).count();
+        times_us.push_back(us);
+    }
+
+    /* ── 统计 ── */
+    double sum_us = std::accumulate(times_us.begin(), times_us.end(), 0.0);
+    double avg_us = sum_us / ITERS;
+    double min_us = *std::min_element(times_us.begin(), times_us.end());
+    double max_us = *std::max_element(times_us.begin(), times_us.end());
+    double var_us = 0.0;
+    for (double t : times_us) { double d = t - avg_us; var_us += d * d; }
+    var_us /= (ITERS > 1) ? (ITERS - 1) : 1;
+    double std_us = std::sqrt(var_us);
+
+    /* ── 格式化输出 ── */
+    std::ostringstream oss;
+    oss << "\n=== Benchmark: FRD Encode (ABB10) ===\n"
+        << "  Parameters: n=" << n << ", q=" << q << "\n"
+        << "  Warmup rounds : " << WARMUP << "\n"
+        << "  Timed  rounds : " << ITERS << "\n\n"
+        << std::fixed << std::setprecision(1)
+        << "  Average   : " << std::setw(8) << avg_us << " µs\n"
+        << "  Min       : " << std::setw(8) << min_us << " µs\n"
+        << "  Max       : " << std::setw(8) << max_us << " µs\n"
+        << "  StdDev    : " << std::setw(8) << std_us << " µs\n"
+        << "  Throughput: " << std::setw(8)
+        << (1e6 / avg_us) << " ops/s\n";
+
+    std::cout << "\n--- Benchmark: FRD Encode ---\n";
+    std::cout << oss.str();
+    write_to_bench_file(oss.str());
 }
 
 

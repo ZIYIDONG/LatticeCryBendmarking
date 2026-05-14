@@ -7,29 +7,26 @@
 
 #include <vector>
 
-namespace mp12 {
+// Diagnostics / demos extracted from main.cpp (global scope)
 
-// Diagnostics / demos extracted from main.cpp
+void test_gadget(const mp12::Params& p);
+void test_gadget_basis(const mp12::Params& p);
+void test_sample_g(const mp12::Params& p);
+void test_gen_trap(const mp12::Params& p);
+void test_sample_pre(const mp12::Params& p);
+void test_uniformity(const mp12::Params& p);
+void test_full_roundtrip_large(const mp12::Params& p);
 
-void test_gadget(const Params& p);
-void test_gadget_basis(const Params& p);
-void test_sample_g(const Params& p);
-void test_gen_trap(const Params& p);
-void test_sample_pre(const Params& p);
-void test_uniformity(const Params& p);
-void test_full_roundtrip_large(const Params& p);
+void bench_gen_trap(const mp12::Params& p);
 
-void run_mp12_trap_tests(const Params& p);
+void run_mp12_trap_tests(const mp12::Params& p);
 
-double vec_norm(const Vec& v);
-
-} // namespace mp12
+double vec_norm(const mp12::Vec& v);
 
 /* ── External test entry points from other translation units ── */
 void run_test_powersof();
 void run_test_powersof_modswitch();
 void run_test_frd();
-void run_debug_frd();
 void run_bench_matops();
 void run_test_expand();
 void run_test_eval();
