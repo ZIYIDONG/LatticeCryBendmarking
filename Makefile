@@ -4,7 +4,7 @@
 #   plain  (no structure, matrix ops, slowest)  →  module  (block circulant, balanced)  →  ring  (full algebraic, fastest)
 #
 # Usage:
-#   make plain-demo        Plain-LWE  demo  (n=8)    → build_plain-demo/
+#   make plain-demo        Plain-LWE  demo  (n=64)   → build_plain-demo/
 #   make plain-Level-1     Plain-LWE  L1   (n=512)   → build_plain-Level-1/
 #   make plain-Level-3     Plain-LWE  L3   (n=768)   → build_plain-Level-3/
 #   make plain-Level-5     Plain-LWE  L5   (n=1024)  → build_plain-Level-5/
@@ -73,11 +73,11 @@ clean:
 help:
 	@echo "LatticeCryBenchmarking — Build Targets (plain → module → ring)"
 	@echo ""
-	@echo "  make plain-demo         Plain-LWE  Demo      (n=8,   q=257)"
-	@echo "  make plain-Level-1      Plain-LWE  NIST L1   (n=512, q~2^27)"
-	@echo "  make plain-Level-3      Plain-LWE  NIST L3   (n=768, q~2^32)"
-	@echo "  make plain-Level-5      Plain-LWE  NIST L5   (n=1024,q~2^32)"
+	@echo "  make plain-demo         Plain-LWE  Demo      (n=64,  q=8191, ~40-bit)"
+	@echo "  make plain-Level-1      Plain-LWE  NIST L1   (n=512, q~2^27,~128-bit)"
+	@echo "  make plain-Level-3      Plain-LWE  NIST L3   (n=768, q~2^32,~192-bit)"
+	@echo "  make plain-Level-5      Plain-LWE  NIST L5   (n=1024,q~2^32,~256-bit)"
 	@echo "  make module-*           Module-LWE (future)"
 	@echo "  make ring-*             Ring-LWE   (future)"
-	@echo "  make all-demo/Level-*   Build all three variants"
+	@echo "  make all-*              Build all three variants"
 	@echo "  make clean              Remove all build directories"
