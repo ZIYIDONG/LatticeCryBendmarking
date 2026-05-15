@@ -100,10 +100,13 @@ LatticeCryBendmarking/
     ├── powersof_modswitch.cpp      # Modulus switching tests
     ├── frd.cpp                     # FRD correctness & invertibility tests
     ├── matops.cpp                  # Matrix operations performance benchmark
-    ├── expand.cpp                  # Ciphertext expansion tests
-    ├── eval.cpp                    # Homomorphic evaluation tests
-    ├── test_decrypt.cpp            # PartDec / FinDec correctness tests
-    └── bench_decrypt.cpp           # Decryption pipeline micro-benchmark
+    ├── expand_plain-LWE.cpp          # Ciphertext expansion tests
+    ├── eval_plain-LWE.cpp            # Homomorphic evaluation tests
+    ├── encrypt_plain-LWE.cpp         # LWE / GSW / UniEnc encryption tests + benchmarks
+    ├── decrypt_plain-LWE.cpp         # PartDec / FinDec correctness tests
+    ├── bench_decrypt_plain-LWE.cpp   # Decryption pipeline micro-benchmark
+    ├── security_plain-LWE.cpp        # SIS/LWE hardness + noise budget analysis
+    └── matops_plain-LWE.cpp          # Matrix ops correctness + benchmark
 ```
 
 **Architecture**: All test/benchmark source files (`src/test_*.cpp`, `src/bench_*.cpp`) are compiled into a static library `libdemos.a`. `src/main.cpp` is the sole executable entry point that links against this library and orchestrates all test suites.

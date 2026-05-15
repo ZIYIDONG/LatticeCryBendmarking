@@ -16,104 +16,180 @@
   Warmup rounds : 3
   Timed  rounds : 20
 
-  Average   :    106.0 µs
-  Min       :     90.6 µs
-  Max       :    209.7 µs
-  StdDev    :     32.5 µs
-  Throughput:   9436.9 ops/s
+  Average   :    109.4 µs
+  Min       :     94.2 µs
+  Max       :    178.7 µs
+  StdDev    :     26.1 µs
+  Throughput:   9143.0 ops/s
 
 === Benchmark: DelTrapGen (MP12 §5) ===
   Parameters: n=8, q=257, b=2, k=9, m=80, σ=1
   Warmup rounds : 3
   Timed  rounds : 20
 
-  Average   :     17.0 µs
+  Average   :     12.1 µs
   Min       :     12.0 µs
-  Max       :    109.5 µs
-  StdDev    :     21.8 µs
-  Throughput:  58832.2 ops/s
+  Max       :     12.3 µs
+  StdDev    :      0.1 µs
+  Throughput:  82726.7 ops/s
 
 === Benchmark: SamplePre (tagged, MP12 Algo 2) ===
   Parameters: n=8, q=257, b=2, k=9, m=80, s=254.558
   Warmup rounds : 3
   Timed  rounds : 20
 
-  Average   :     19.6 µs
-  Min       :     17.7 µs
-  Max       :     20.9 µs
-  StdDev    :      0.9 µs
-  Throughput:  50977.2 ops/s
+  Average   :     27.8 µs
+  Min       :     18.3 µs
+  Max       :    172.9 µs
+  StdDev    :     34.2 µs
+  Throughput:  35999.7 ops/s
+=== Benchmark: Encryption Primitives ===
+
+=== Benchmark: LWE Encrypt (single bit) ===
+  Parameters: q=257, N=9, m=20, sigma=3.2
+  Warmup rounds : 3
+  Timed rounds : 20
+
+  Average   :      0.4 us
+  Min       :      0.3 us
+  Max       :      0.6 us
+  StdDev    :      0.1 us
+  Throughput: 2659574.5 ops/s
+
+=== Benchmark: GSW Encrypt (full ciphertext) ===
+  Parameters: q=257, N=8, M=72
+  Warmup rounds : 3
+  Timed rounds : 10
+
+  Average   :    189.3 us
+  Min       :    139.4 us
+  Max       :    282.6 us
+  StdDev    :     43.0 us
+  Throughput:   5281.9 ops/s
+
+=== Benchmark: UniEnc (A*R + mu*G with LWE-encrypted R) ===
+  Parameters: q=257, N=9, m=4
+  Warmup rounds : 2
+  Timed rounds : 5
+
+  Average   :      6.0 us
+  Min       :      5.8 us
+  Max       :      6.3 us
+  StdDev    :      0.2 us
+  Throughput: 167280.0 ops/s
+
+=== Benchmark: UniEnc.1 — sample_binary_mat (R in {0,1}^(mxm)) ===
+  Parameters: m=20
+  Warmup: 3  Timed: 20
+
+  Average:      1.4 us  Min:      1.3  Max:      1.9  StdDev:      0.1  Ops/s: 729128.7
+
+=== Benchmark: UniEnc.2 — mat_mul(A*R) ===
+  Parameters: q=257, N=9, m=20
+  Warmup: 3  Timed: 20
+
+  Average:     13.7 us  Min:     13.7  Max:     13.8  StdDev:      0.0  Ops/s:  72928.6
+
+=== Benchmark: UniEnc.3 — scalar_mat_mul(mu*G) ===
+  Parameters: q=257, N=9, m=20
+  Warmup: 3  Timed: 20
+
+  Average:      0.3 us  Min:      0.3  Max:      0.4  StdDev:      0.0  Ops/s: 3527336.9
+
+=== Benchmark: UniEnc.4 — mat_add(C = AR + mu*G) ===
+  Parameters: q=257, N=9, m=20
+  Warmup: 3  Timed: 20
+
+  Average:      0.5 us  Min:      0.5  Max:      0.7  StdDev:      0.0  Ops/s: 1836547.3
 
 === Benchmark: Powersof / BitDecomp ===
   Parameters: n=8, q=257, b=2, k=9
   Warmup rounds : 3
   Timed  rounds : 20
 
-  Powersof_b     Avg=     0.2 µs  Min=     0.2 µs  Max=     0.3 µs  σ=     0.0 µs
-  BitDecomp_b   Avg=     0.1 µs  Min=     0.1 µs  Max=     0.1 µs  σ=     0.0 µs
+  Powersof_b     Avg=     0.3 µs  Min=     0.3 µs  Max=     0.5 µs  σ=     0.0 µs
+  BitDecomp_b   Avg=     0.1 µs  Min=     0.1 µs  Max=     0.2 µs  σ=     0.0 µs
 
 === Benchmark: Powersof2 with ModSwitch (IBE keygen) ===
   Parameters: p=17, q=257, m=8
   Warmup rounds : 3
   Timed  rounds : 20
 
-  Average   :      4.4 µs
-  Min       :      0.8 µs
-  Max       :     71.5 µs
-  StdDev    :     15.8 µs
-  Throughput: 228754.4 ops/s
+  Average   :      0.7 µs
+  Min       :      0.6 µs
+  Max       :      0.8 µs
+  StdDev    :      0.0 µs
+  Throughput: 1459854.0 ops/s
 
 === Benchmark: FRD Encode (ABB10) ===
   Parameters: n=8, q=257
   Warmup rounds : 3
   Timed  rounds : 20
 
-  Average   :      0.4 µs
+  Average   :      0.3 µs
   Min       :      0.3 µs
   Max       :      0.4 µs
   StdDev    :      0.0 µs
-  Throughput: 2808988.8 ops/s
+  Throughput: 2881844.4 ops/s
 === Benchmark: Matrix Operations (matops.h) ===
   API: mat_add / mat_sub / mat_hcat / mat_mul
 
 
 --- HIBE Delegation Step Breakdown ---
-  Step 1  T = H_{id}·G       : 8×112    0.023 ms
+  Step 1  T = H_{id}·G       : 8×112    0.022 ms
   Step 2  B = A_ℓ + T        : 8×112    0.002 ms
   Step 3  [A_{ℓ-1} || B]    : 8×344  0.003 ms
   Step 4  H_ℓ·G - B         : 8×112    0.024 ms
   ─────────────────────────────────────────
   总耗时(单次委托步骤)   : 0.051 ms
 
+  tiny      16x  16   0.0007619 ms     3e+02 M ops/s
+  small     64x  64    0.007563 ms     5e+02 M ops/s
+  medium   128x 128     0.03666 ms     4e+02 M ops/s
+  large    256x 256      0.3182 ms     2e+02 M ops/s
+  wide      32x 256     0.01356 ms     6e+02 M ops/s
+  tall     256x  32     0.01818 ms     5e+02 M ops/s
+  tiny      16x  16    0.000791 ms     3e+02 M ops/s
+  small     64x  64    0.007712 ms     5e+02 M ops/s
+  medium   128x 128     0.02872 ms     6e+02 M ops/s
+  large    256x 256      0.3446 ms     2e+02 M ops/s
+  wide      32x 256     0.01361 ms     6e+02 M ops/s
+  tall     256x  32     0.01877 ms     4e+02 M ops/s
+  tiny      16x  16   0.0005311 ms     1e+03 M cells/s
+  small     64x  64    0.004287 ms     2e+03 M cells/s
+  medium   128x 128     0.09081 ms     4e+02 M cells/s
+  large    256x 256      0.5322 ms     2e+02 M cells/s
+  wide      32x 256     0.00736 ms     2e+03 M cells/s
+  tall     256x  32     0.01021 ms     2e+03 M cells/s
 
 === Benchmark: Matrix Ops Relative Timing (128×128) ===
   Parameters: q=257
-  add :    0.0283 ms  (基准  1×)
-  sub :    0.0266 ms  (0.94×)
-  hcat:    0.0952 ms  (3.37×)
-  mul :    7.0864 ms  (250.80×)
+  add :    0.0560 ms  (基准  1×)
+  sub :    0.0282 ms  (0.50×)
+  hcat:    0.0846 ms  (1.51×)
+  mul :    6.8884 ms  (122.99×)
 
 === Benchmark: Extend (GSW.LComb) ===
   Parameters: d=3, N=3, n=8, q=257, R=33, m=6
   Warmup rounds : 3
   Timed  rounds : 20
 
-  Average   :      2.5 µs
+  Average   :      2.6 µs
   Min       :      2.5 µs
-  Max       :      2.5 µs
+  Max       :      2.6 µs
   StdDev    :      0.0 µs
-  Throughput: 405515.0 ops/s
+  Throughput: 386989.4 ops/s
 
 === Benchmark: Expand (N×N block construction) ===
   Parameters: d=3, N=3, n=8, q=257, R=33, m=6
   Warmup rounds : 3
   Timed  rounds : 20
 
-  Average   :      8.1 µs
-  Min       :      8.1 µs
-  Max       :      8.2 µs
+  Average   :      7.9 µs
+  Min       :      7.9 µs
+  Max       :      8.1 µs
   StdDev    :      0.0 µs
-  Throughput: 123532.3 ops/s
+  Throughput: 126382.3 ops/s
 
 === Benchmark: AddEval (GSW homomorphic addition) ===
   Parameters: q=257, b=2, k=9, r=6, c=54
@@ -124,25 +200,82 @@
   Min       :      0.4 µs
   Max       :      0.6 µs
   StdDev    :      0.0 µs
-  Throughput: 2293578.0 ops/s
+  Throughput: 2314814.8 ops/s
 
 === Benchmark: MultEval (GSW homomorphic multiplication) ===
   Parameters: q=257, b=2, k=9, r=6, c=54
   Warmup rounds : 3
   Timed  rounds : 20
 
-  Average   :     36.7 µs
+  Average   :     36.5 µs
   Min       :     33.0 µs
-  Max       :    104.8 µs
-  StdDev    :     16.0 µs
-  Throughput:  27249.3 ops/s
+  Max       :     99.2 µs
+  StdDev    :     14.8 µs
+  Throughput:  27379.6 ops/s
 
 === Test: Multi-ID Threshold Decryption ===
-  Total tests: 52, Passed: 45, Failed: 7
+  Total tests: 52, Passed: 46, Failed: 6
   Result: SOME FAIL
-  p (|centered|) mean = 65, max = 128
+  p (|centered|) mean = 66, max = 128
+=== Benchmark: Security Estimates ===
+
+--- SIS ---
+  n=8 q=257 m=80  ||x||=2276.84  δ=2.452124  β=3  λ=1 bits
+
+--- LWE ---
+  n=8 q=257  σ=3.200000 α=0.0125  δ=1.896481  β=3  λ=1 bits
+
+--- Correctness ---
+  ‖x‖=2276.839915 q/4=64.250000  margin=0.0x
 === Benchmark: FHE Decryption (PartDec + FinDec) ===
 
 
---- Parameter Scaling Sweep Summary ---
-  See console output for full table.
+--- PartDec breakdown (k=0, n=8 d=1 N=3) ---
+   1 构造 ŵ                  0.03    us  std=0.01    0.1  %
+  2  ŵ→列矩阵             0.26    us  std=0.07    0.7  %
+  3  G⁻¹(ŵ^T)               4.69    us  std=4.11    12.6 %
+  4  u_col→Vec                0.09    us  std=0.01    0.2  %
+  5  提取子块 Ĉ_{k,j}      1.69    us  std=4.57    4.5  %
+  6  向量-矩阵乘 t·Ĉ_{k,j} 8.39    us  std=5.57    22.6 %
+  7  内积 v_j·u              0.74    us  std=0.01    2.0  %
+  8  γ_k 累加 (N块循环)   31.10   us  std=12.30   83.7 %
+  9  掩蔽噪声 e^{sm}        0.02    us  std=0.02    0.1  %
+  10 ED_k = γ_k + e^{sm}       0.02    us  std=0.00    0.1  %
+  11 ★ PartDec 完整 (单身份) 37.15   us  std=12.60   100.0%
+
+--- FinDec breakdown (n=8 d=1 N=3) ---
+  1  累加 Σ ED_i             0.03    us  std=0.00    141.4%
+  2  中心化 center_mod       0.02    us  std=0.00    100.2%
+  3  舍入判定 μ_D          0.02    us  std=0.00    100.1%
+  4  ★ FinDec 完整          0.02    us  std=0.00    100.0%
+
+--- PartDec breakdown (k=0, n=8 d=2 N=5) ---
+  1  构造 ŵ                  0.03    us  std=0.02    0.0  %
+  2  ŵ→列矩阵             0.37    us  std=0.09    0.3  %
+  3  G⁻¹(ŵ^T)               6.94    us  std=6.02    5.9  %
+  4  u_col→Vec                0.16    us  std=0.19    0.1  %
+  5  提取子块 Ĉ_{k,j}      3.56    us  std=8.54    3.0  %
+  6  向量-矩阵乘 t·Ĉ_{k,j} 18.63   us  std=11.48   15.9 %
+  7  内积 v_j·u              1.08    us  std=0.02    0.9  %
+  8  γ_k 累加 (N块循环)   105.74  us  std=19.91   90.2 %
+  9  掩蔽噪声 e^{sm}        0.03    us  std=0.03    0.0  %
+  10 ED_k = γ_k + e^{sm}       0.02    us  std=0.00    0.0  %
+  11 ★ PartDec 完整 (单身份) 117.24  us  std=21.80   100.0%
+
+--- FinDec breakdown (n=8 d=2 N=5) ---
+  1  累加 Σ ED_i             0.04    us  std=0.01    194.8%
+  2  中心化 center_mod       0.02    us  std=0.00    98.1 %
+  3  舍入判定 μ_D          0.02    us  std=0.00    97.6 %
+  4  ★ FinDec 完整          0.02    us  std=0.00    100.0%
+
+--- Parameter Scaling Sweep (PartDec bottleneck) ---
+  n  d   q    N   R  Ginv(us)  tCu(us)  Total(us)
+  2   1   257   2   5    1.2       2.0    4.0   
+  2   1   257   3   5    1.6       2.4    5.5   
+  2   1   257   5   5    1.6       4.0    7.9   
+  3   1   257   3   7    1.7       5.0    8.9   
+  4   1   257   3   9    2.5       8.2    12.7  
+  2   2   257   3   7    1.7       5.2    8.9   
+  2   3   257   3   9    2.2       8.3    12.8  
+  4   2   257   3   13   3.6       16.7   23.7  
+  4   2   257   5   13   3.3       27.8   36.3  

@@ -145,10 +145,10 @@ static std::vector<Vec> generate_shared_keys(const Vec& t_master,
     }
     return keys;
 }
-
 /* ══════════════════════════════════════════════════
-   格式化打印工具
+   格式化打印工具 + 文件输出
    ══════════════════════════════════════════════════ */
+
 struct StepEntry {
     std::string name;
     std::string formula;
@@ -183,6 +183,24 @@ static void print_table(const std::string& title,
     }
     std::cout << "└────┴──────────────────────────┴─────────────────"
                  "────────┴────────────┴──────────┴───────┘\n";
+}
+
+// Write steps to bdec_oss in plain text (defined after StepEntry struct)
+static void dump_steps_to_oss(const std::string& title,
+                              const std::vector<StepEntry>& entries,
+                              double total_us)
+{
+    bdec_oss << "\n--- " << title << " ---\n";
+    for (size_t i = 0; i < entries.size(); ++i) {
+        const auto& e = entries[i];
+        double pct = (total_us > 0) ? (e.timing.avg_us / total_us * 100.0) : 0;
+        bdec_oss << "  " << std::setw(2) << (i+1) << " "
+                 << std::left << std::setw(26) << e.name << " "
+                 << std::fixed << std::setprecision(2)
+                 << std::setw(7) << e.timing.avg_us << " us  std="
+                 << std::setw(6) << e.timing.stddev_us << "  "
+                 << std::setprecision(1) << std::setw(5) << pct << "%\n";
+    }
 }
 
 /* ══════════════════════════════════════════════════
@@ -365,6 +383,9 @@ static void run_benchmark(int n, int d, long q, int N_id, int REPS)
 
     print_table("ξ.PartDec 基本操作拆解  (身份 k=" + std::to_string(k_idx) + ")",
                 steps, full_partdec.avg_us);
+    dump_steps_to_oss("PartDec breakdown (k=" + std::to_string(k_idx) + ", n="
+                      + std::to_string(n) + " d=" + std::to_string(d)
+                      + " N=" + std::to_string(N_id) + ")", steps, full_partdec.avg_us);
 
     /* ================================================================
        FinDec 步骤拆解
@@ -419,6 +440,9 @@ static void run_benchmark(int n, int d, long q, int N_id, int REPS)
     });
 
     print_table("ξ.FinDec 基本操作拆解", fin_steps, full_findec.avg_us);
+    dump_steps_to_oss("FinDec breakdown (n=" + std::to_string(n) + " d="
+                      + std::to_string(d) + " N=" + std::to_string(N_id) + ")",
+                      fin_steps, full_findec.avg_us);
 
     /* ================================================================
        全流程汇总 (N 个 PartDec + 1 个 FinDec)
@@ -553,9 +577,41 @@ static void scaling_test()
     std::cout << "    Total:     完整 PartDec (含噪声采样等)\n";
     std::cout << "    瓶颈: 向量-矩阵乘 O(R·M) = O(R²·k), 随 n, d 二次增长\n";
 
-    /* 写入文件: 缩放数据摘要 */
-    bdec_oss << "\n--- Parameter Scaling Sweep Summary ---\n"
-             << "  See console output for full table.\n";
+    /* 写入文件: 缩放数据全表 */
+    bdec_oss << "\n--- Parameter Scaling Sweep (PartDec bottleneck) ---\n"
+             << "  n  d   q    N   R  Ginv(us)  tCu(us)  Total(us)\n";
+    for (auto& cfg : configs) {
+        MIDParams p2 = MIDParams::make(cfg.n, cfg.d, cfg.q, cfg.N, b, 4, 1);
+        Vec wh2 = build_w_hat(p2.R, cfg.q);
+        Mat wc2(p2.R, Vec(1));
+        for (int i = 0; i < p2.R; ++i) wc2[i][0] = wh2[i];
+        auto t_g = bench([&](){ gadget_inverse(wc2, cfg.q, b); }, 200);
+        Mat uc2 = gadget_inverse(wc2, cfg.q, b);
+        Vec u2(p2.M); for (int i = 0; i < p2.M; ++i) u2[i] = uc2[i][0];
+        std::mt19937_64 rr(42);
+        std::uniform_int_distribution<long> uu(0, cfg.q-1);
+        Vec tm(p2.R); for (int i = 0; i < p2.R-1; ++i) tm[i] = uu(rr); tm[p2.R-1] = 1;
+        auto ks2 = generate_shared_keys(tm, cfg.N, cfg.q, rr);
+        Mat AA2 = generate_lwe_matrix(tm, p2.R, p2.M, cfg.q, 1, rr);
+        Mat GG2 = build_gadget(p2.R, cfg.q, b);
+        Mat CC2 = gsw_encrypt(AA2, GG2, 1, cfg.q, rr);
+        Mat Ch2 = simple_expand(CC2, cfg.N);
+        auto t_c = bench([&](){
+            long gamma = 0;
+            for (int j = 0; j < p2.N_id; ++j) {
+                Mat blk = extract_block(Ch2, 0, j, p2.R, p2.M);
+                Vec v = vec_mat_mul(ks2[0], blk, cfg.q);
+                gamma = mod_pos(gamma + vec_dot_mod(v, u2, cfg.q), cfg.q);
+            }
+        }, 200);
+        auto t_f = bench([&](){ part_dec(Ch2, 0, ks2[0], p2, 42); }, 200);
+        bdec_oss << "  " << std::setw(3) << cfg.n << " " << std::setw(3) << cfg.d
+                 << " " << std::setw(5) << cfg.q << " " << std::setw(3) << cfg.N
+                 << " " << std::setw(4) << p2.R
+                 << " " << std::setw(9) << std::fixed << std::setprecision(1) << t_g.avg_us
+                 << " " << std::setw(6) << t_c.avg_us
+                 << " " << std::setw(6) << t_f.avg_us << "\n";
+    }
 }
 
 /* ══════════════════════════════════════════════════

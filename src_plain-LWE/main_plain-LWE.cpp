@@ -66,6 +66,7 @@ int main() {
 
     // ── 其他模块测试 / 基准 ──
     std::cout << "\n--- Running consolidated demos from other translation units ---\n";
+    run_test_encrypt();
     run_test_powersof();
     run_test_powersof_modswitch();
     run_test_frd();
@@ -73,6 +74,7 @@ int main() {
     run_test_expand();
     run_test_eval();
     run_test_decrypt();
+    run_test_security();
     run_bench_decrypt();
 
     std::cout << "\nAll tests completed.\n";

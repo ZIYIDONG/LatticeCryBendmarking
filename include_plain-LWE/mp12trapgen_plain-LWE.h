@@ -24,6 +24,7 @@ void run_mp12_trap_tests(const mp12::Params& p);
 double vec_norm(const mp12::Vec& v);
 
 /* ── External test entry points from other translation units ── */
+void run_test_encrypt();
 void run_test_powersof();
 void run_test_powersof_modswitch();
 void run_test_frd();
@@ -31,6 +32,7 @@ void run_bench_matops();
 void run_test_expand();
 void run_test_eval();
 void run_test_decrypt();
+void run_test_security();
 void run_bench_decrypt();
 
 #endif // MP12TRAPGEN_H

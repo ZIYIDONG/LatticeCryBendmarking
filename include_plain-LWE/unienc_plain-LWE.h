@@ -24,6 +24,7 @@
  */
 
 #include "matops_plain-LWE.h"
+#include "mp12_plain-LWE.h"
 #include <random>
 #include <chrono>
 #include <vector>
@@ -235,6 +236,63 @@ inline UniEncOutput uni_enc(const Mat& A, const Mat& G, long mu_D,
     }
 
     return UniEncOutput{ std::move(C), std::move(U), std::move(R) };
+}
+
+/* ══════════════════════════════════════════════════
+   §7  LWE Secret / Noise Sampling (unified API)
+   ══════════════════════════════════════════════════ */
+/**
+ * sample_lwe_secret — 生成 LWE 私钥向量 s ∈ D_{Z,σ}^m
+ *
+ * 仿照 OpenFHE 的统一密钥生成接口:
+ *   s ← D_{Z,σ}^m  (离散高斯)
+ *
+ * OpenFHE 对应: DiscreteUniformGeneratorImpl -> ternary
+ * 这里使用: mp12::DGSampler  (离散高斯, 12σ tail cut)
+ *
+ * 参数:
+ *   m     — 向量维度
+ *   sigma — 高斯宽度 (默认 3.2, 对应 LWE 标准参数)
+ *   seed  — 随机种子 (0 = 随机设备)
+ */
+inline Vec sample_lwe_secret(int m, double sigma = 3.2, uint64_t seed = 0) {
+    mp12::DGSampler dg(sigma, 0.0, seed);
+    Vec s(m);
+    for (int i = 0; i < m; ++i) s[i] = dg.sample();
+    return s;
+}
+
+/**
+ * sample_lwe_noise — 生成 LWE 噪声向量 e ∈ D_{Z,σ}^N
+ *
+ * 与 sample_lwe_secret 相同的底层采样器,
+ * 语义分离是为了代码可读性和未来扩展 (如改用 CBD)。
+ */
+inline Vec sample_lwe_noise(int N, double sigma = 3.2, uint64_t seed = 0) {
+    mp12::DGSampler dg(sigma, 0.0, seed);
+    Vec e(N);
+    for (int i = 0; i < N; ++i) e[i] = dg.sample();
+    return e;
+}
+
+/**
+ * sample_lwe_secret_ternary — 生成三元 LWE 私钥 s ∈ {−1,0,1}^m
+ *
+ * 大多数主流库 (OpenFHE, SEAL, Lattigo 等) 默认使用三元分布:
+ *   优点: (1) 操作极快 (只需加减) (2) 安全性与高斯等价
+ *
+ * 使用 std::uniform_int_distribution<int>(0, 2) 然后映射:
+ *   0 → -1,  1 → 0,  2 → 1
+ */
+inline Vec sample_lwe_secret_ternary(int m, uint64_t seed = 0) {
+    std::mt19937_64 rng(seed ? seed : std::random_device{}());
+    std::uniform_int_distribution<int> dist(0, 2);
+    Vec s(m);
+    for (int i = 0; i < m; ++i) {
+        int v = dist(rng);
+        s[i] = (v == 0) ? -1 : (v == 2 ? 1 : 0);
+    }
+    return s;
 }
 
 } // namespace unienc

@@ -1,4 +1,5 @@
 #include "../include_plain-LWE/powersof_modswitch_plain-LWE.h"
+#include "../include_plain-LWE/unienc_plain-LWE.h"
 #include <iostream>
 #include <iomanip>
 #include <random>
@@ -112,8 +113,6 @@ void run_test_powersof_modswitch() {
 
         std::mt19937_64 rng(42);
         std::uniform_int_distribution<long> dist_q(0, q - 1);
-        // e 取小值 (LWE 噪声)
-        std::uniform_int_distribution<long> dist_e(-3, 3);
 
         int trials = 1000;
         double max_err = 0, sum_err = 0;
@@ -121,9 +120,8 @@ void run_test_powersof_modswitch() {
         long tolerance = (k_p + m * k_q);  // 总舍入误差上界量级
 
         for (int t = 0; t < trials; t++) {
-            // 构造 e
-            Vec e(m);
-            for (int i = 0; i < m; i++) e[i] = dist_e(rng);
+            // 构造 e — 使用统一的离散高斯采样器 (σ=3.2)
+            Vec e = unienc::sample_lwe_noise(m, 3.2, (uint64_t)t + 42);
 
             // 计算 sk_id (不 mod p,保留整数,方便算误差)
             Vec sk_int = powers_of_2_with_modswitch(e, p, q, false);
@@ -240,10 +238,7 @@ static void bench_powersof_modswitch() {
     long p = 17;
     int  m = 8;
 
-    std::mt19937_64 rng(42);
-    std::uniform_int_distribution<long> dist_e(-3, 3);
-    Vec e0(m);
-    for (int i = 0; i < m; ++i) e0[i] = dist_e(rng);
+    Vec e0 = unienc::sample_lwe_noise(m, 3.2, 42);
 
     /* ── 预热 ── */
     for (int i = 0; i < WARMUP; ++i) {
@@ -254,8 +249,7 @@ static void bench_powersof_modswitch() {
     std::vector<double> times_us;
     times_us.reserve(ITERS);
     for (int i = 0; i < ITERS; ++i) {
-        Vec e(m);
-        for (int j = 0; j < m; ++j) e[j] = dist_e(rng);
+        Vec e = unienc::sample_lwe_noise(m, 3.2, (uint64_t)(i + 1) * 100003);
         auto t0 = Clock::now();
         (void)powers_of_2_with_modswitch(e, p, q, true);
         auto t1 = Clock::now();

@@ -231,6 +231,9 @@ void run_benchmarks() {
         std::cout << "  " << std::setw(4) << s.r << "×" << std::setw(4) << s.c
                   << "    " << std::setw(10) << std::fixed << std::setprecision(4) << t
                   << "    " << std::setw(8) << std::setprecision(1) << mops << " M ops/s\n";
+        bench_oss << "  " << s.name << std::setw(4) << s.r << "x" << std::setw(4) << s.c
+                  << "  " << std::setw(10) << std::setprecision(4) << t
+                  << " ms  " << std::setw(8) << std::setprecision(1) << mops << " M ops/s\n";
         results.push_back({"add", s.r, s.c, s.r, s.c, s.r, s.c, t, mops});
     }
 
@@ -246,6 +249,9 @@ void run_benchmarks() {
         std::cout << "  " << std::setw(4) << s.r << "×" << std::setw(4) << s.c
                   << "    " << std::setw(10) << std::fixed << std::setprecision(4) << t
                   << "    " << std::setw(8) << std::setprecision(1) << mops << " M ops/s\n";
+        bench_oss << "  " << s.name << std::setw(4) << s.r << "x" << std::setw(4) << s.c
+                  << "  " << std::setw(10) << std::setprecision(4) << t
+                  << " ms  " << std::setw(8) << std::setprecision(1) << mops << " M ops/s\n";
         results.push_back({"sub", s.r, s.c, s.r, s.c, s.r, s.c, t, mops});
     }
 
@@ -261,6 +267,9 @@ void run_benchmarks() {
         std::cout << "  " << std::setw(4) << s.r << "×" << std::setw(4) << s.c
                   << "    " << std::setw(10) << std::fixed << std::setprecision(4) << t
                   << "    " << std::setw(8) << std::setprecision(1) << mops << " M cells/s\n";
+        bench_oss << "  " << s.name << std::setw(4) << s.r << "x" << std::setw(4) << s.c
+                  << "  " << std::setw(10) << std::setprecision(4) << t
+                  << " ms  " << std::setw(8) << std::setprecision(1) << mops << " M cells/s\n";
         results.push_back({"hcat", s.r, s.c, s.r, s.c, s.r, s.c*2, t, mops});
     }
 
