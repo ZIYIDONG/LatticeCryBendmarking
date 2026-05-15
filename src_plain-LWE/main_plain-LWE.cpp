@@ -11,7 +11,7 @@
 
 #include "../include_plain-LWE/mp12_plain-LWE.h"
 #include "../include_plain-LWE/mp12deltrapgen_plain-LWE.h"
-#include "../include_plain-LWE/mp12trap_plain-LWE.h"
+#include "../include_plain-LWE/mp12trapgen_plain-LWE.h"
 #include "../include_plain-LWE/unified_params_plain-LWE.h"
 
 #include <iostream>

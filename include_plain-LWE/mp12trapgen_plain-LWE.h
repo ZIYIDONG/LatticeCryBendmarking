@@ -1,5 +1,5 @@
-#ifndef MP12TRAP_H
-#define MP12TRAP_H
+#ifndef MP12TRAPGEN_H
+#define MP12TRAPGEN_H
 
 #include "mp12_plain-LWE.h"
 #include "mp12deltrapgen_plain-LWE.h"
@@ -33,4 +33,4 @@ void run_test_eval();
 void run_test_decrypt();
 void run_bench_decrypt();
 
-#endif // MP12TRAP_H
+#endif // MP12TRAPGEN_H

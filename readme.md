@@ -79,7 +79,7 @@ LatticeCryBendmarking/
 │
 ├── include/                        # Public headers
 │   ├── mp12.h                      # Core: GenTrap, SamplePre, gadget matrix G, Gaussian sampler
-│   ├── mp12trap.h                  # MP12 trapdoor test harness (Tests 1–7)
+│   ├── mp12trapgen.h                  # MP12 trapdoor test harness (Tests 1–7)
 │   ├── mp12deltrapgen.h            # Delegated trapdoor: DelTrapGen, SampleLeft, SampleRight
 │   ├── unified_params_plain-LWE.h  # Unified parameter provider (#ifdef LATTICE_128BIT)
 │   ├── powersof.h                  # Powersof_b and BitDecomp_b (scalar / vector / matrix)
@@ -94,7 +94,7 @@ LatticeCryBendmarking/
 │
 └── src/                            # Implementation & tests
     ├── main.cpp                    # Single entry point — runs all tests & benchmarks
-    ├── mp12trap.cpp                # MP12 trapdoor test suite (Tests 1–7)
+    ├── mp12trapgen.cpp                # MP12 trapdoor test suite (Tests 1–7)
     ├── mp12deltrapgen.cpp          # Delegated trapdoor test suite (Tests 8–11)
     ├── powersof.cpp                # Powersof / BitDecomp tests
     ├── powersof_modswitch.cpp      # Modulus switching tests
