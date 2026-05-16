@@ -1,0 +1,23 @@
+
+==========================================================
+  LatticeCryBenchmarking — Run Parameters
+==========================================================
+  n     = 512  (lattice dimension)
+  q     = 134219777  (modulus)
+  b     = 27  (gadget base)
+  k     = 6  (k = ceil(log_b q))
+  m_bar = 512
+  m     = 3584  (total columns of A)
+  sigma = 1  (trapdoor Gaussian width)
+  s     = 18328.2  (preimage Gaussian width)
+
+=== Benchmark: GenTrap (MP12 Algorithm 1) ===
+  Parameters: n=512, q=134219777, b=27, k=6, m=3584, σ=1
+  Warmup rounds : 3
+  Timed  rounds : 20
+
+  Average   : 2927446.9 µs
+  Min       : 2897704.1 µs
+  Max       : 2971082.1 µs
+  StdDev    :  22359.0 µs
+  Throughput:      0.3 ops/s

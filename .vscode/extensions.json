@@ -3,6 +3,11 @@
         "ms-vscode.cmake-tools",
         "ms-vscode.cpptools-extension-pack",
         "anthropic.claude-code",
-        "github.copilot-chat"
+        "github.copilot-chat",
+        "continue.continue",
+        "rooveterinaryinc.roo-cline",
+        "saoudrizwan.claude-dev",
+        "openai.chatgpt",
+        "sst-dev.opencode"
     ]
 }

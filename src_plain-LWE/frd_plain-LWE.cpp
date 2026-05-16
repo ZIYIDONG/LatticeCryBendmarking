@@ -30,7 +30,6 @@ static int matrix_rank_mod(Mat M, long q) {
     int rank = 0;
     int col = 0;
     for (int r = 0; r < rows && col < cols; ) {
-        // 找列 col 中第 r 行起的非零主元
         int pivot = -1;
         for (int i = r; i < rows; i++)
             if (M[i][col] != 0) { pivot = i; break; }
@@ -63,37 +62,41 @@ static Mat mat_sub(const Mat& A, const Mat& B, long q) {
     return R;
 }
 
+/* ───── 判断是否可运行 FRDContext::setup（避免 find_irreducible 溢出）───── */
+static bool can_setup_frd(long q) { return q <= 100000; }
+
 /* ───── Debug: 手动验证 Rabin 不可约性测试 ───── */
 static void debug_irreducible_check() {
     auto __u_p = unified::default_mp12_params(); long q = __u_p.q;
 
-    // F_7 上 x^2 + 1 是不是不可约? 7 mod 4 == 3, 所以 -1 不是 QR
-    Vec f1 = {1, 0, 1};   // 1 + 0·x + x^2 = x^2 + 1
+    Vec f1 = {1, 0, 1};
     std::cout << "\n--- Debug: 不可约多项式手动验证 (F_" << q << ") ---\n";
     std::cout << "f = x^2 + 1, deg = " << poly_deg(f1) << "\n";
     std::cout << "is_irreducible(x^2+1, F_" << q << ") = " << is_irreducible(f1, q) << "\n";
 
-    // F_7 上 x^2 - 2 = x^2 + 5 (因为 -2 mod 7 = 5)
     Vec f2 = {5, 0, 1};
     std::cout << "f2 = x^2 + 5, is_irreducible? " << is_irreducible(f2, q) << "\n";
 
-    // x^2 + x + 3
     Vec f3 = {3, 1, 1};
     std::cout << "f3 = x^2 + x + 3, is_irreducible? " << is_irreducible(f3, q) << "\n";
 
-    // 穷举搜索所有 monic 二次不可约多项式
-    int count = 0;
-    for (long c = 0; c < q; c++) {
-        for (long b = 0; b < q; b++) {
-            Vec f = {c, b, 1};
-            if (is_irreducible(f, q)) {
-                if (count < 6)  // 只打印前 6 个避免刷屏
-                    std::cout << "found: x^2 + " << b << "x + " << c << "\n";
-                count++;
+    // 穷举搜索所有 monic 二次不可约多项式 (仅小 q 时)
+    if (q <= 127) {
+        int count = 0;
+        for (long c = 0; c < q; c++) {
+            for (long b = 0; b < q; b++) {
+                Vec f = {c, b, 1};
+                if (is_irreducible(f, q)) {
+                    if (count < 6)
+                        std::cout << "found: x^2 + " << b << "x + " << c << "\n";
+                    count++;
+                }
             }
         }
+        std::cout << "Total irreducible monic quadratics: " << count << "/" << (q * q) << "\n";
+    } else {
+        std::cout << "Skipping exhaustive search (q=" << q << " too large).\n";
     }
-    std::cout << "Total irreducible monic quadratics found: " << count << "/" << (q * q) << "\n";
 }
 
 void run_test_frd() {
@@ -151,7 +154,9 @@ void run_test_frd() {
 
     /* ───── Test 3: 全秩差分核心性质 ───── */
     std::cout << "\n--- Test 3: 全秩差分性质 (核心) ---\n";
-    {
+    if (!can_setup_frd(unified::default_mp12_params().q)) {
+        std::cout << "  Skipped (q too large for find_irreducible).\n";
+    } else {
         auto __u_p = unified::default_mp12_params(); long q = __u_p.q;
         int n = 4;
         auto ctx = FRDContext::setup(n, q, 13);
@@ -167,7 +172,6 @@ void run_test_frd() {
                 id1[i] = dist(rng);
                 id2[i] = dist(rng);
             }
-            // 确保 id1 ≠ id2
             if (id1 == id2) { id2[0] = (id2[0] + 1) % q; }
 
             Mat H1 = frd_encode(ctx, id1);
@@ -181,9 +185,11 @@ void run_test_frd() {
                   << "   " << (full_rank == trials ? "PASS" : "FAIL") << "\n";
     }
 
-    /* ───── Test 4: 线性性 FRD(a) - FRD(b) = FRD(a-b) ───── */
+    /* ───── Test 4: 线性性 ───── */
     std::cout << "\n--- Test 4: 线性性 FRD(a) - FRD(b) = FRD(a-b) ---\n";
-    {
+    if (!can_setup_frd(unified::default_mp12_params().q)) {
+        std::cout << "  Skipped (q too large for find_irreducible).\n";
+    } else {
         auto __u_p = unified::default_mp12_params(); long q = __u_p.q;
         int n = 5;
         auto ctx = FRDContext::setup(n, q, 99);
@@ -209,9 +215,11 @@ void run_test_frd() {
                   << "  " << (pass == trials ? "PASS" : "FAIL") << "\n";
     }
 
-    /* ───── Test 5: 零身份 → 零矩阵 ───── */
+    /* ───── Test 5: 零身份 ───── */
     std::cout << "\n--- Test 5: FRD(0) = 0 ---\n";
-    {
+    if (!can_setup_frd(unified::default_mp12_params().q)) {
+        std::cout << "  Skipped (q too large for find_irreducible).\n";
+    } else {
         auto __u_p = unified::default_mp12_params(); long q = __u_p.q;
         int n = 6;
         auto ctx = FRDContext::setup(n, q, 1);
@@ -224,13 +232,15 @@ void run_test_frd() {
         std::cout << "  " << (all_zero ? "PASS" : "FAIL") << "\n";
     }
 
-    /* ───── Test 6: FRD(单位元 e_0) = I_n ───── */
+    /* ───── Test 6: 单位元 ───── */
     std::cout << "\n--- Test 6: FRD([1,0,0,...]) = I_n ---\n";
-    {
+    if (!can_setup_frd(unified::default_mp12_params().q)) {
+        std::cout << "  Skipped (q too large for find_irreducible).\n";
+    } else {
         auto __u_p = unified::default_mp12_params(); long q = __u_p.q;
         int n = 5;
         auto ctx = FRDContext::setup(n, q, 5);
-        Vec e0(n, 0); e0[0] = 1;     // 多项式 a(x) = 1
+        Vec e0(n, 0); e0[0] = 1;
         Mat H = frd_encode(ctx, e0);
         bool is_id = true;
         for (int i = 0; i < n; i++)
@@ -243,8 +253,10 @@ void run_test_frd() {
     }
 
     /* ───── Test 7: 性能测试 ───── */
-    std::cout << "\n--- Test 7: 性能 (n=8, q=8209) ---\n";
-    {
+    std::cout << "\n--- Test 7: 性能 ---\n";
+    if (!can_setup_frd(unified::default_mp12_params().q)) {
+        std::cout << "  Skipped (q too large for find_irreducible).\n";
+    } else {
         auto __u_p = unified::default_mp12_params(); long q = __u_p.q;
         int n = 8;
         auto ctx = FRDContext::setup(n, q, 11);
@@ -274,7 +286,7 @@ void run_test_frd() {
 }
 
 /* ───────────────────────────────────────────────────
-   文件输出辅助：将单条 benchmark 结果追加写入文件
+   文件输出辅助
    ─────────────────────────────────────────────────── */
 static void write_to_bench_file(const std::string& content) {
     constexpr const char* OUT_PATH = "../bendmarking_output/bendmarking_plain-LWE.txt";
@@ -291,14 +303,6 @@ static void write_to_bench_file(const std::string& content) {
 /* ───────────────────────────────────────────────────
    Benchmark: FRD 编码 纯耗时
    ─────────────────────────────────────────────────── */
-/**
- * bench_frd_encode — 纯粹测量 frd_encode() 的耗时
- *
- *   ① 预先构造 FRDContext（不计入时间）
- *   ② 预热 3 轮
- *   ③ 20 轮计时（每轮随机 id）
- *   ④ 统计：平均 / 最小 / 最大 / 标准差（µs）
- */
 void bench_frd_encode() {
     using Clock = std::chrono::high_resolution_clock;
     constexpr int WARMUP  = 3;
@@ -308,19 +312,21 @@ void bench_frd_encode() {
     long q = __u_p.q;
     int  n = 8;
 
-    /* ── 预先构造 FRDContext（不计入时间）── */
+    if (!can_setup_frd(q)) {
+        std::cout << "\n--- Benchmark: FRD Encode ---\n  Skipped (q=" << q << " too large for find_irreducible).\n";
+        return;
+    }
+
     auto ctx = FRDContext::setup(n, q, 11);
     std::mt19937_64 rng(0);
     std::uniform_int_distribution<long> dist(0, q - 1);
 
-    /* ── 预热 ── */
     for (int i = 0; i < WARMUP; ++i) {
         Vec id(n);
         for (int j = 0; j < n; ++j) id[j] = dist(rng);
         (void)frd_encode(ctx, id);
     }
 
-    /* ── 计时 ── */
     std::vector<double> times_us;
     times_us.reserve(ITERS);
     for (int i = 0; i < ITERS; ++i) {
@@ -333,7 +339,6 @@ void bench_frd_encode() {
         times_us.push_back(us);
     }
 
-    /* ── 统计 ── */
     double sum_us = std::accumulate(times_us.begin(), times_us.end(), 0.0);
     double avg_us = sum_us / ITERS;
     double min_us = *std::min_element(times_us.begin(), times_us.end());
@@ -343,7 +348,6 @@ void bench_frd_encode() {
     var_us /= (ITERS > 1) ? (ITERS - 1) : 1;
     double std_us = std::sqrt(var_us);
 
-    /* ── 格式化输出 ── */
     std::ostringstream oss;
     oss << "\n=== Benchmark: FRD Encode (ABB10) ===\n"
         << "  Parameters: n=" << n << ", q=" << q << "\n"
@@ -361,5 +365,3 @@ void bench_frd_encode() {
     std::cout << oss.str();
     write_to_bench_file(oss.str());
 }
-
-

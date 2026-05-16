@@ -16,8 +16,13 @@
 
 #include <iostream>
 #include <fstream>
+#include <chrono>
+#include <iomanip>
 
 int main() {
+    // ── 计时起点 ──
+    auto t_start = std::chrono::high_resolution_clock::now();
+
     // ── 横幅 ──
     std::cout << "╔════════════════════════════════════════════════╗\n"
               << "║  LatticeCryBendmarking — C/C++ Implementation  ║\n"
@@ -77,6 +82,28 @@ int main() {
     run_test_security();
     run_bench_decrypt();
 
-    std::cout << "\nAll tests completed.\n";
+    // ── 总耗时 ──
+    auto t_end = std::chrono::high_resolution_clock::now();
+    double total_s  = std::chrono::duration<double>(t_end - t_start).count();
+    double total_ms = total_s * 1000.0;
+
+    std::cout << "\nAll tests completed.\n"
+              << "Total elapsed time: " << std::fixed << std::setprecision(2)
+              << total_s << " s  (" << total_ms << " ms)\n";
+
+    /* 写入文件 */
+    {
+        constexpr const char* OUT_PATH = "../bendmarking_output/bendmarking_plain-LWE.txt";
+        std::ofstream fout(OUT_PATH, std::ios::app);
+        if (fout.is_open()) {
+            fout << "\n----------------------------------------------------------\n"
+                 << "  Total elapsed time: " << std::fixed << std::setprecision(2)
+                 << total_s << " s  (" << total_ms << " ms)\n"
+                 << "----------------------------------------------------------\n";
+            fout.close();
+            std::cout << "  [Total time written to " << OUT_PATH << "]\n";
+        }
+    }
+
     return 0;
 }

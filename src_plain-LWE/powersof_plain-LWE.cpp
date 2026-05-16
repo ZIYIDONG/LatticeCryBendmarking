@@ -57,19 +57,28 @@ void run_test_powersof() {
         int b = 2;
         int k = compute_k(q, b);
         std::cout << "q=" << q << "  k=" << k << "\n";
+        long check_count = (q > 10000) ? 10000 : q;
         bool all_ok = true;
-        for (long a = 0; a < q; a++) {
+        for (long a = 0; a < check_count; a++) {
             Vec d = bit_decomp_scalar(a, b, q);
-            // 重构: Σ d_j · b^j
             long recon = 0, pw = 1;
-            for (int j = 0; j < k; j++) {
-                recon += d[j] * pw;
-                pw *= b;
-            }
+            for (int j = 0; j < k; j++) { recon += d[j] * pw; pw *= b; }
             if (mod_q(recon, q) != a) { all_ok = false; break; }
         }
-        std::cout << "  全部 " << q << " 个值重构: "
-                  << (all_ok ? "PASS" : "FAIL") << "\n";
+        if (all_ok && q > check_count) {
+            std::mt19937_64 rng2(7);
+            std::uniform_int_distribution<long> dist2(0, q - 1);
+            for (int t = 0; t < 1000 && all_ok; t++) {
+                long a = dist2(rng2);
+                Vec d = bit_decomp_scalar(a, b, q);
+                long recon = 0, pw = 1;
+                for (int j = 0; j < k; j++) { recon += d[j] * pw; pw *= b; }
+                if (mod_q(recon, q) != a) all_ok = false;
+            }
+        }
+        std::cout << "  " << (q > check_count ? std::to_string(check_count) + " + 1000 spot"
+                                              : std::to_string(q))
+                  << " values: " << (all_ok ? "PASS" : "FAIL") << "\n";
     }
 
     /* ───── Test 4: 关键对偶恒等式 ───── */
