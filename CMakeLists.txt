@@ -6,6 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O2")
 
 set(INC_DIR ${CMAKE_SOURCE_DIR}/include_plain-LWE)
+set(INC_RLWEOR_NTRU_DIR ${CMAKE_SOURCE_DIR}/include_RLWEorNTRU)
 
 # ── 安全级别选择 ──
 #    cmake ..                            → Demo (default, n=64, ~40-bit)
@@ -44,3 +45,58 @@ target_include_directories(demos PRIVATE ${INC_DIR})
 add_executable(LatticeCryBenchmarking src_plain-LWE/main_plain-LWE.cpp)
 target_include_directories(LatticeCryBenchmarking PRIVATE ${INC_DIR})
 target_link_libraries(LatticeCryBenchmarking PRIVATE demos)
+
+# ============================================================================
+# IBAGS (RLWE/NTRU) — 核心库
+# ============================================================================
+set(IBAGS_CORE_SRCS
+    src_RLWEorNTRU/params.cpp
+    src_RLWEorNTRU/secure_memory.cpp
+    src_RLWEorNTRU/mod_reduce.cpp
+    src_RLWEorNTRU/poly.cpp
+    src_RLWEorNTRU/poly_ntt.cpp
+    src_RLWEorNTRU/xof.cpp
+    src_RLWEorNTRU/csprng.cpp
+    src_RLWEorNTRU/encode.cpp
+    src_RLWEorNTRU/transcript.cpp
+    src_RLWEorNTRU/hash.cpp
+    src_RLWEorNTRU/gauss.cpp
+    src_RLWEorNTRU/reject.cpp
+    src_RLWEorNTRU/ntru_secret.cpp
+    src_RLWEorNTRU/ntru_trapgen.cpp
+)
+add_library(ibags_core STATIC ${IBAGS_CORE_SRCS})
+target_include_directories(ibags_core PUBLIC ${INC_RLWEOR_NTRU_DIR})
+target_compile_options(ibags_core PRIVATE -Wall -Wextra)
+
+# OpenSSL for SHAKE256 XOF
+find_package(OpenSSL REQUIRED)
+target_link_libraries(ibags_core PUBLIC OpenSSL::Crypto)
+
+# ============================================================================
+# IBAGS 单元测试 (全部 standalone, 无 GTest)
+# ============================================================================
+
+# 测试: errors, params & secure_memory (no-GTest, standalone)
+add_executable(test_ibags_core
+    src_RLWEorNTRU/test_ibags_core.cpp
+)
+target_include_directories(test_ibags_core PRIVATE ${INC_RLWEOR_NTRU_DIR})
+target_compile_options(test_ibags_core PRIVATE -Wall -Wextra)
+target_link_libraries(test_ibags_core PRIVATE ibags_core)
+
+# 测试: poly & NTT (no-GTest, standalone)
+add_executable(test_ibags_poly
+    src_RLWEorNTRU/test_ibags_poly.cpp
+)
+target_include_directories(test_ibags_poly PRIVATE ${INC_RLWEOR_NTRU_DIR})
+target_compile_options(test_ibags_poly PRIVATE -Wall -Wextra)
+target_link_libraries(test_ibags_poly PRIVATE ibags_core)
+
+# 测试: ntru_trapgen (no-GTest, standalone)
+add_executable(test_ntru_trapgen
+    src_RLWEorNTRU/test_ntru_trapgen.cpp
+)
+target_include_directories(test_ntru_trapgen PRIVATE ${INC_RLWEOR_NTRU_DIR})
+target_compile_options(test_ntru_trapgen PRIVATE -Wall -Wextra)
+target_link_libraries(test_ntru_trapgen PRIVATE ibags_core)
