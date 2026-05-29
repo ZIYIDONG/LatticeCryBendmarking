@@ -188,10 +188,6 @@ void run_test_powersof() {
    Benchmark: Powersof / BitDecomp 纯耗时
    ─────────────────────────────────────────────────── */
 static void bench_powersof() {
-    using Clock = std::chrono::high_resolution_clock;
-    constexpr int WARMUP  = 3;
-    constexpr int ITERS   = 20;
-
     auto u_p = unified::default_mp12_params();
     long q = u_p.q;
     int  b = u_p.b;
@@ -202,64 +198,61 @@ static void bench_powersof() {
     std::uniform_int_distribution<long> dist(0, q - 1);
 
     Vec v(n);
-    for (int i = 0; i < n; ++i) v[i] = dist(rng);
 
-    /* ── 预热 ── */
-    for (int i = 0; i < WARMUP; ++i) {
+    std::cout << "  Benchmarking Powersof (1000 rounds, 50 warmup)... " << std::flush;
+    auto stats_po = run_benchmark([&]() {
+        for (int i = 0; i < n; ++i) v[i] = dist(rng);
         (void)powers_of_b_vec(v, b, q);
+    }, 1000, 50);
+    std::cout << "done\n" << std::flush;
+
+    std::cout << "  Benchmarking BitDecomp (1000 rounds, 50 warmup)... " << std::flush;
+    auto stats_bd = run_benchmark([&]() {
+        for (int i = 0; i < n; ++i) v[i] = dist(rng);
         (void)bit_decomp_vec(v, b, q);
-    }
-
-    /* ── Powersof 计时 ── */
-    std::vector<double> times_po, times_bd;
-    times_po.reserve(ITERS);
-    times_bd.reserve(ITERS);
-    for (int i = 0; i < ITERS; ++i) {
-        Vec vi(n);
-        for (int j = 0; j < n; ++j) vi[j] = dist(rng);
-
-        auto t0 = Clock::now();
-        (void)powers_of_b_vec(vi, b, q);
-        auto t1 = Clock::now();
-        times_po.push_back(std::chrono::duration<double, std::micro>(t1 - t0).count());
-
-        auto t2 = Clock::now();
-        (void)bit_decomp_vec(vi, b, q);
-        auto t3 = Clock::now();
-        times_bd.push_back(std::chrono::duration<double, std::micro>(t3 - t2).count());
-    }
-
-    auto stats = [&](const std::vector<double>& tv) {
-        double s = std::accumulate(tv.begin(), tv.end(), 0.0);
-        double a = s / ITERS;
-        double mn = *std::min_element(tv.begin(), tv.end());
-        double mx = *std::max_element(tv.begin(), tv.end());
-        double vv = 0;
-        for (double t : tv) { double d = t - a; vv += d * d; }
-        vv /= (ITERS > 1) ? (ITERS - 1) : 1;
-        return std::make_tuple(a, mn, mx, std::sqrt(vv));
-    };
-
-    auto [avg_po, min_po, max_po, std_po] = stats(times_po);
-    auto [avg_bd, min_bd, max_bd, std_bd] = stats(times_bd);
+    }, 1000, 50);
+    std::cout << "done\n" << std::flush;
 
     std::ostringstream oss;
-    oss << "\n=== Benchmark: Powersof / BitDecomp ===\n"
-        << "  Parameters: n=" << n << ", q=" << q
-        << ", b=" << b << ", k=" << k << "\n"
-        << "  Warmup rounds : " << WARMUP << "\n"
-        << "  Timed  rounds : " << ITERS << "\n\n"
-        << std::fixed << std::setprecision(1)
-        << "  Powersof_b     Avg=" << std::setw(8) << avg_po
-        << " µs  Min=" << std::setw(8) << min_po
-        << " µs  Max=" << std::setw(8) << max_po
-        << " µs  σ=" << std::setw(8) << std_po << " µs\n"
-        << "  BitDecomp_b   Avg=" << std::setw(8) << avg_bd
-        << " µs  Min=" << std::setw(8) << min_bd
-        << " µs  Max=" << std::setw(8) << max_bd
-        << " µs  σ=" << std::setw(8) << std_bd << " µs\n";
+
+    auto report_po = [&](std::ostream& os) {
+        os << "\n=== Benchmark: Powersof_b ===\n"
+           << "  Parameters: n=" << n << ", q=" << q
+           << ", b=" << b << ", k=" << k << "\n"
+           << "  Total iterations : 1000\n"
+           << "  Warmup discarded : 50\n"
+           << "  Active samples   : " << stats_po.active_samples << "\n\n"
+           << std::fixed << std::setprecision(1)
+           << "  Average   : " << std::setw(8) << stats_po.avg_us << " us\n"
+           << "  Median    : " << std::setw(8) << stats_po.median_us << " us\n"
+           << "  StdDev    : " << std::setw(8) << stats_po.stddev_us << " us\n"
+           << "  Min       : " << std::setw(8) << stats_po.min_us << " us\n"
+           << "  Max       : " << std::setw(8) << stats_po.max_us << " us\n"
+           << "  Throughput: " << std::setw(8)
+           << (1e6 / stats_po.avg_us) << " ops/s\n";
+    };
+
+    auto report_bd = [&](std::ostream& os) {
+        os << "\n=== Benchmark: BitDecomp_b ===\n"
+           << "  Parameters: n=" << n << ", q=" << q
+           << ", b=" << b << ", k=" << k << "\n"
+           << "  Total iterations : 1000\n"
+           << "  Warmup discarded : 50\n"
+           << "  Active samples   : " << stats_bd.active_samples << "\n\n"
+           << std::fixed << std::setprecision(1)
+           << "  Average   : " << std::setw(8) << stats_bd.avg_us << " us\n"
+           << "  Median    : " << std::setw(8) << stats_bd.median_us << " us\n"
+           << "  StdDev    : " << std::setw(8) << stats_bd.stddev_us << " us\n"
+           << "  Min       : " << std::setw(8) << stats_bd.min_us << " us\n"
+           << "  Max       : " << std::setw(8) << stats_bd.max_us << " us\n"
+           << "  Throughput: " << std::setw(8)
+           << (1e6 / stats_bd.avg_us) << " ops/s\n";
+    };
 
     std::cout << "\n--- Benchmark: Powersof / BitDecomp ---\n";
-    std::cout << oss.str();
+    report_po(std::cout);
+    report_bd(std::cout);
+    report_po(oss);
+    report_bd(oss);
     bench_write(oss.str());
 }

@@ -1,9 +1,6 @@
 #pragma once
-#include <string>
 #include <vector>
 #include <functional>
-
-void bench_write(const std::string& content);
 
 struct BenchStats {
     double avg_us;
@@ -12,11 +9,9 @@ struct BenchStats {
     double min_us;
     double max_us;
     int    active_samples;
-    std::vector<double> all_us;  // sorted, excluding warmup
+    std::vector<double> all_us;
 };
 
-// Runs func total_iters times. Discards first warmup results from statistics.
-// Returns stats computed from the remaining (total_iters - warmup) samples.
 BenchStats run_benchmark(const std::function<void()>& func,
                           int total_iters = 1000,
                           int warmup = 50);

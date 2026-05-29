@@ -14,9 +14,6 @@
 #include <iostream>
 #include <iomanip>
 #include <random>
-#include <chrono>
-#include <numeric>
-#include <cmath>
 #include <fstream>
 #include <sstream>
 #include <cassert>
@@ -147,23 +144,7 @@ static void test_uni_enc_correctness() {
     }
 }
 
-/* ═══════════════════════════════════════════════════
-   Benchmark helper + 3 benchmarks
-   ═══════════════════════════════════════════════════ */
-static auto bench_stats(const std::vector<double>& tv) {
-    double s = std::accumulate(tv.begin(), tv.end(), 0.0);
-    double a = s / tv.size();
-    double mn = *std::min_element(tv.begin(), tv.end());
-    double mx = *std::max_element(tv.begin(), tv.end());
-    double v = 0;
-    for (double t : tv) { double d = t - a; v += d * d; }
-    v /= (tv.size() > 1) ? (tv.size() - 1) : 1;
-    return std::make_tuple(a, mn, mx, std::sqrt(v));
-}
-
 static void bench_lwe_encrypt() {
-    using Clock = std::chrono::high_resolution_clock;
-    constexpr int W = 3, Niter = 20;
     auto mp = unified::default_mp12_params();
     long q = mp.q; int Ndim = mp.n + 1, mdim = 20;
     std::mt19937_64 rng(42);
@@ -172,31 +153,23 @@ static void bench_lwe_encrypt() {
         for (int j = 0; j < mdim; ++j)
             A[i][j] = std::uniform_int_distribution<long>(0,q-1)(rng);
 
-    for (int w = 0; w < W; ++w) (void)lwe_encrypt_bit(A, 0, q, 3.2, rng);
-    std::vector<double> tv; tv.reserve(Niter);
-    for (int i = 0; i < Niter; ++i) {
-        auto t0 = Clock::now(); (void)lwe_encrypt_bit(A, 0, q, 3.2, rng);
-        auto t1 = Clock::now();
-        tv.push_back(std::chrono::duration<double,std::micro>(t1-t0).count());
-    }
-    auto [a, mn, mx, sd] = bench_stats(tv);
+    auto stats = run_benchmark([&]{ (void)lwe_encrypt_bit(A, 0, q, 3.2, rng); }, 1000, 50);
     std::ostringstream oss;
     oss << "\n=== Benchmark: LWE Encrypt (single bit) ===\n"
         << "  Parameters: q=" << q << ", N=" << Ndim << ", m=" << mdim << ", sigma=3.2\n"
-        << "  Warmup rounds : " << W << "\n  Timed rounds : " << Niter << "\n\n"
+        << "  Total iterations: 1000  Warmup: 50  Active samples: " << stats.active_samples << "\n\n"
         << std::fixed << std::setprecision(1)
-        << "  Average   : " << std::setw(8) << a  << " us\n"
-        << "  Min       : " << std::setw(8) << mn << " us\n"
-        << "  Max       : " << std::setw(8) << mx << " us\n"
-        << "  StdDev    : " << std::setw(8) << sd << " us\n"
-        << "  Throughput: " << std::setw(8) << (1e6/a) << " ops/s\n";
+        << "  Average   : " << std::setw(8) << stats.avg_us    << " us\n"
+        << "  Median    : " << std::setw(8) << stats.median_us << " us\n"
+        << "  Min       : " << std::setw(8) << stats.min_us    << " us\n"
+        << "  Max       : " << std::setw(8) << stats.max_us    << " us\n"
+        << "  StdDev    : " << std::setw(8) << stats.stddev_us << " us\n"
+        << "  Throughput: " << std::setw(8) << (1e6/stats.avg_us) << " ops/s\n";
     std::cout << "\n--- Benchmark: LWE Encrypt ---\n" << oss.str();
     enc_oss << oss.str();
 }
 
 static void bench_gsw_encrypt() {
-    using Clock = std::chrono::high_resolution_clock;
-    constexpr int W = 3, Niter = 10;
     auto mp = unified::default_mp12_params();
     long q = mp.q; int b = mp.b;
     int k = cryptolib::eval_compute_k(q, b), Ndim = 8, Mdim = Ndim * k;
@@ -207,31 +180,23 @@ static void bench_gsw_encrypt() {
         for (int j = 0; j < Mdim; ++j)
             A[i][j] = std::uniform_int_distribution<long>(0,q-1)(rng);
 
-    for (int w = 0; w < W; ++w) (void)gsw_encrypt(A, G, 1, q, rng);
-    std::vector<double> tv; tv.reserve(Niter);
-    for (int i = 0; i < Niter; ++i) {
-        auto t0 = Clock::now(); (void)gsw_encrypt(A, G, 1, q, rng);
-        auto t1 = Clock::now();
-        tv.push_back(std::chrono::duration<double,std::micro>(t1-t0).count());
-    }
-    auto [a, mn, mx, sd] = bench_stats(tv);
+    auto stats = run_benchmark([&]{ (void)gsw_encrypt(A, G, 1, q, rng); }, 1000, 50);
     std::ostringstream oss;
     oss << "\n=== Benchmark: GSW Encrypt (full ciphertext) ===\n"
         << "  Parameters: q=" << q << ", N=" << Ndim << ", M=" << Mdim << "\n"
-        << "  Warmup rounds : " << W << "\n  Timed rounds : " << Niter << "\n\n"
+        << "  Total iterations: 1000  Warmup: 50  Active samples: " << stats.active_samples << "\n\n"
         << std::fixed << std::setprecision(1)
-        << "  Average   : " << std::setw(8) << a  << " us\n"
-        << "  Min       : " << std::setw(8) << mn << " us\n"
-        << "  Max       : " << std::setw(8) << mx << " us\n"
-        << "  StdDev    : " << std::setw(8) << sd << " us\n"
-        << "  Throughput: " << std::setw(8) << (1e6/a) << " ops/s\n";
+        << "  Average   : " << std::setw(8) << stats.avg_us    << " us\n"
+        << "  Median    : " << std::setw(8) << stats.median_us << " us\n"
+        << "  Min       : " << std::setw(8) << stats.min_us    << " us\n"
+        << "  Max       : " << std::setw(8) << stats.max_us    << " us\n"
+        << "  StdDev    : " << std::setw(8) << stats.stddev_us << " us\n"
+        << "  Throughput: " << std::setw(8) << (1e6/stats.avg_us) << " ops/s\n";
     std::cout << "\n--- Benchmark: GSW Encrypt ---\n" << oss.str();
     enc_oss << oss.str();
 }
 
 static void bench_uni_enc() {
-    using Clock = std::chrono::high_resolution_clock;
-    constexpr int W = 2, Niter = 5;
     auto mp = unified::default_mp12_params();
     long q = mp.q; int n = mp.n, mdim = 4;
     auto params = unienc::Params::make(n, 0, mdim, q, 3.2);
@@ -242,24 +207,18 @@ static void bench_uni_enc() {
             A[i][j] = std::uniform_int_distribution<long>(0,q-1)(rng);
     Mat Gg = unienc::make_gadget(params.N, params.m, mp.b, q);
 
-    for (int w = 0; w < W; ++w) (void)uni_enc(A, Gg, 1, params, 777);
-    std::vector<double> tv; tv.reserve(Niter);
-    for (int i = 0; i < Niter; ++i) {
-        auto t0 = Clock::now(); (void)uni_enc(A, Gg, 1, params, 777);
-        auto t1 = Clock::now();
-        tv.push_back(std::chrono::duration<double,std::micro>(t1-t0).count());
-    }
-    auto [a, mn, mx, sd] = bench_stats(tv);
+    auto stats = run_benchmark([&]{ (void)uni_enc(A, Gg, 1, params, 777); }, 1000, 50);
     std::ostringstream oss;
     oss << "\n=== Benchmark: UniEnc (A*R + mu*G with LWE-encrypted R) ===\n"
         << "  Parameters: q=" << q << ", N=" << params.N << ", m=" << mdim << "\n"
-        << "  Warmup rounds : " << W << "\n  Timed rounds : " << Niter << "\n\n"
+        << "  Total iterations: 1000  Warmup: 50  Active samples: " << stats.active_samples << "\n\n"
         << std::fixed << std::setprecision(1)
-        << "  Average   : " << std::setw(8) << a  << " us\n"
-        << "  Min       : " << std::setw(8) << mn << " us\n"
-        << "  Max       : " << std::setw(8) << mx << " us\n"
-        << "  StdDev    : " << std::setw(8) << sd << " us\n"
-        << "  Throughput: " << std::setw(8) << (1e6/a) << " ops/s\n";
+        << "  Average   : " << std::setw(8) << stats.avg_us    << " us\n"
+        << "  Median    : " << std::setw(8) << stats.median_us << " us\n"
+        << "  Min       : " << std::setw(8) << stats.min_us    << " us\n"
+        << "  Max       : " << std::setw(8) << stats.max_us    << " us\n"
+        << "  StdDev    : " << std::setw(8) << stats.stddev_us << " us\n"
+        << "  Throughput: " << std::setw(8) << (1e6/stats.avg_us) << " ops/s\n";
     std::cout << "\n--- Benchmark: UniEnc ---\n" << oss.str();
     enc_oss << oss.str();
 }
@@ -270,33 +229,24 @@ static void bench_uni_enc() {
 
 // 1 — sample_binary_mat
 static void bench_uni_sub01_binary_mat() {
-    using Clock = std::chrono::high_resolution_clock;
-    constexpr int W = 3, Niter = 20;
     int m = 20;
     std::mt19937_64 rng(42);
-    for (int w = 0; w < W; ++w) (void)unienc::sample_binary_mat(m, m, rng);
-    std::vector<double> tv; tv.reserve(Niter);
-    for (int i = 0; i < Niter; ++i) {
-        auto t0 = Clock::now(); (void)unienc::sample_binary_mat(m, m, rng);
-        auto t1 = Clock::now();
-        tv.push_back(std::chrono::duration<double,std::micro>(t1-t0).count());
-    }
-    auto [a, mn, mx, sd] = bench_stats(tv);
+    auto stats = run_benchmark([&]{ (void)unienc::sample_binary_mat(m, m, rng); }, 1000, 50);
     std::ostringstream oss;
     oss << "\n=== Benchmark: UniEnc.1 — sample_binary_mat (R in {0,1}^(mxm)) ===\n"
-        << "  Parameters: m=" << m << "\n  Warmup: " << W << "  Timed: " << Niter << "\n\n"
+        << "  Parameters: m=" << m << "\n"
+        << "  Total iterations: 1000  Warmup: 50  Active samples: " << stats.active_samples << "\n\n"
         << std::fixed << std::setprecision(1)
-        << "  Average: " << std::setw(8) << a << " us  Min: " << std::setw(8) << mn
-        << "  Max: " << std::setw(8) << mx << "  StdDev: " << std::setw(8) << sd
-        << "  Ops/s: " << std::setw(8) << (1e6/a) << "\n";
+        << "  Average: " << std::setw(8) << stats.avg_us    << " us  Min: " << std::setw(8) << stats.min_us
+        << "  Max: " << std::setw(8) << stats.max_us << "  Median: " << std::setw(8) << stats.median_us
+        << "  StdDev: " << std::setw(8) << stats.stddev_us
+        << "  Ops/s: " << std::setw(8) << (1e6/stats.avg_us) << "\n";
     std::cout << "\n--- Sub-bench: UniEnc.1 sample_binary_mat ---\n" << oss.str();
     enc_oss << oss.str();
 }
 
 // 2 — mat_mul(A, R)
 static void bench_uni_sub02_mat_mul_AR() {
-    using Clock = std::chrono::high_resolution_clock;
-    constexpr int W = 3, Niter = 20;
     auto mp = unified::default_mp12_params();
     long q = mp.q; int Ndim = mp.n + 1, mdim = 20;
     std::mt19937_64 rng(99);
@@ -304,57 +254,41 @@ static void bench_uni_sub02_mat_mul_AR() {
     Mat R = unienc::sample_binary_mat(mdim, mdim, rng);
     for (int i = 0; i < Ndim; ++i)
         for (int j = 0; j < mdim; ++j) A[i][j] = std::uniform_int_distribution<long>(0,q-1)(rng);
-    for (int w = 0; w < W; ++w) (void)mat_mul(A, R, q);
-    std::vector<double> tv; tv.reserve(Niter);
-    for (int i = 0; i < Niter; ++i) {
-        auto t0 = Clock::now(); (void)mat_mul(A, R, q);
-        auto t1 = Clock::now();
-        tv.push_back(std::chrono::duration<double,std::micro>(t1-t0).count());
-    }
-    auto [a, mn, mx, sd] = bench_stats(tv);
+    auto stats = run_benchmark([&]{ (void)mat_mul(A, R, q); }, 1000, 50);
     std::ostringstream oss;
     oss << "\n=== Benchmark: UniEnc.2 — mat_mul(A*R) ===\n"
         << "  Parameters: q=" << q << ", N=" << Ndim << ", m=" << mdim << "\n"
-        << "  Warmup: " << W << "  Timed: " << Niter << "\n\n"
+        << "  Total iterations: 1000  Warmup: 50  Active samples: " << stats.active_samples << "\n\n"
         << std::fixed << std::setprecision(1)
-        << "  Average: " << std::setw(8) << a << " us  Min: " << std::setw(8) << mn
-        << "  Max: " << std::setw(8) << mx << "  StdDev: " << std::setw(8) << sd
-        << "  Ops/s: " << std::setw(8) << (1e6/a) << "\n";
+        << "  Average: " << std::setw(8) << stats.avg_us    << " us  Min: " << std::setw(8) << stats.min_us
+        << "  Max: " << std::setw(8) << stats.max_us << "  Median: " << std::setw(8) << stats.median_us
+        << "  StdDev: " << std::setw(8) << stats.stddev_us
+        << "  Ops/s: " << std::setw(8) << (1e6/stats.avg_us) << "\n";
     std::cout << "\n--- Sub-bench: UniEnc.2 mat_mul ---\n" << oss.str();
     enc_oss << oss.str();
 }
 
 // 3 — scalar_mat_mul(mu, G)
 static void bench_uni_sub03_scalar_mul_G() {
-    using Clock = std::chrono::high_resolution_clock;
-    constexpr int W = 3, Niter = 20;
     auto mp = unified::default_mp12_params();
     long q = mp.q; int Ndim = mp.n + 1, mdim = 20;
     Mat Gg = unienc::make_gadget(Ndim, mdim, mp.b, q);
-    for (int w = 0; w < W; ++w) (void)unienc::scalar_mat_mul(1, Gg, q);
-    std::vector<double> tv; tv.reserve(Niter);
-    for (int i = 0; i < Niter; ++i) {
-        auto t0 = Clock::now(); (void)unienc::scalar_mat_mul(1, Gg, q);
-        auto t1 = Clock::now();
-        tv.push_back(std::chrono::duration<double,std::micro>(t1-t0).count());
-    }
-    auto [a, mn, mx, sd] = bench_stats(tv);
+    auto stats = run_benchmark([&]{ (void)unienc::scalar_mat_mul(1, Gg, q); }, 1000, 50);
     std::ostringstream oss;
     oss << "\n=== Benchmark: UniEnc.3 — scalar_mat_mul(mu*G) ===\n"
         << "  Parameters: q=" << q << ", N=" << Ndim << ", m=" << mdim << "\n"
-        << "  Warmup: " << W << "  Timed: " << Niter << "\n\n"
+        << "  Total iterations: 1000  Warmup: 50  Active samples: " << stats.active_samples << "\n\n"
         << std::fixed << std::setprecision(1)
-        << "  Average: " << std::setw(8) << a << " us  Min: " << std::setw(8) << mn
-        << "  Max: " << std::setw(8) << mx << "  StdDev: " << std::setw(8) << sd
-        << "  Ops/s: " << std::setw(8) << (1e6/a) << "\n";
+        << "  Average: " << std::setw(8) << stats.avg_us    << " us  Min: " << std::setw(8) << stats.min_us
+        << "  Max: " << std::setw(8) << stats.max_us << "  Median: " << std::setw(8) << stats.median_us
+        << "  StdDev: " << std::setw(8) << stats.stddev_us
+        << "  Ops/s: " << std::setw(8) << (1e6/stats.avg_us) << "\n";
     std::cout << "\n--- Sub-bench: UniEnc.3 scalar_mul ---\n" << oss.str();
     enc_oss << oss.str();
 }
 
 // 4 — mat_add(AR, mu*G)
 static void bench_uni_sub04_mat_add_C() {
-    using Clock = std::chrono::high_resolution_clock;
-    constexpr int W = 3, Niter = 20;
     auto mp = unified::default_mp12_params();
     long q = mp.q; int Ndim = mp.n + 1, mdim = 20;
     std::mt19937_64 rng(99);
@@ -363,22 +297,16 @@ static void bench_uni_sub04_mat_add_C() {
         for (int j = 0; j < mdim; ++j)
             { A[i][j] = std::uniform_int_distribution<long>(0,q-1)(rng);
               B[i][j] = std::uniform_int_distribution<long>(0,q-1)(rng); }
-    for (int w = 0; w < W; ++w) (void)mat_add(A, B, q);
-    std::vector<double> tv; tv.reserve(Niter);
-    for (int i = 0; i < Niter; ++i) {
-        auto t0 = Clock::now(); (void)mat_add(A, B, q);
-        auto t1 = Clock::now();
-        tv.push_back(std::chrono::duration<double,std::micro>(t1-t0).count());
-    }
-    auto [a, mn, mx, sd] = bench_stats(tv);
+    auto stats = run_benchmark([&]{ (void)mat_add(A, B, q); }, 1000, 50);
     std::ostringstream oss;
     oss << "\n=== Benchmark: UniEnc.4 — mat_add(C = AR + mu*G) ===\n"
         << "  Parameters: q=" << q << ", N=" << Ndim << ", m=" << mdim << "\n"
-        << "  Warmup: " << W << "  Timed: " << Niter << "\n\n"
+        << "  Total iterations: 1000  Warmup: 50  Active samples: " << stats.active_samples << "\n\n"
         << std::fixed << std::setprecision(1)
-        << "  Average: " << std::setw(8) << a << " us  Min: " << std::setw(8) << mn
-        << "  Max: " << std::setw(8) << mx << "  StdDev: " << std::setw(8) << sd
-        << "  Ops/s: " << std::setw(8) << (1e6/a) << "\n";
+        << "  Average: " << std::setw(8) << stats.avg_us    << " us  Min: " << std::setw(8) << stats.min_us
+        << "  Max: " << std::setw(8) << stats.max_us << "  Median: " << std::setw(8) << stats.median_us
+        << "  StdDev: " << std::setw(8) << stats.stddev_us
+        << "  Ops/s: " << std::setw(8) << (1e6/stats.avg_us) << "\n";
     std::cout << "\n--- Sub-bench: UniEnc.4 mat_add ---\n" << oss.str();
     enc_oss << oss.str();
 }

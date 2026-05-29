@@ -49,24 +49,16 @@ using ns_t  = std::chrono::nanoseconds;
 struct TimingResult {
     double total_us;
     double avg_us;
+    double median_us;
     double stddev_us;
     int    repeats;
 };
 
-static TimingResult bench(std::function<void()> func, int repeats) {
-    std::vector<double> times(repeats);
-    for (int r = 0; r < repeats; ++r) {
-        auto t0 = Clock::now();
-        func();
-        auto t1 = Clock::now();
-        times[r] = std::chrono::duration_cast<ns_t>(t1 - t0).count() / 1000.0;
-    }
-    double sum = std::accumulate(times.begin(), times.end(), 0.0);
-    double avg = sum / repeats;
-    double var = 0;
-    for (double t : times) var += (t - avg) * (t - avg);
-    var /= (repeats > 1) ? (repeats - 1) : 1;
-    return { sum, avg, std::sqrt(var), repeats };
+static TimingResult bench(std::function<void()> func) {
+    auto stats = run_benchmark(func, 1000, 50);
+    return { stats.avg_us * stats.active_samples,
+             stats.avg_us, stats.median_us, stats.stddev_us,
+             stats.active_samples };
 }
 
 #include "lwe_test_helpers_plain-LWE.h"
@@ -85,14 +77,15 @@ static void print_table(const std::string& title,
                         double total_partdec_us)
 {
     std::cout << "\n┌─────────────────────────────────────────────"
-                 "──────────────────────────────────────────────┐\n";
-    std::cout << "│  " << std::left << std::setw(90) << title << "│\n";
+                 "──────────────────────────────────────────────"
+                 "────────────────┐\n";
+    std::cout << "│  " << std::left << std::setw(112) << title << "│\n";
     std::cout << "├────┬──────────────────────────┬─────────────────"
-                 "────────┬────────────┬──────────┬───────┤\n";
+                 "────────┬────────────┬────────────┬──────────┬───────┤\n";
     std::cout << "│ #  │ 操作名称                 │ 公式 / 维度"
-                 "              │  平均 (μs) │ 标准差   │ 占比  │\n";
+                 "              │  平均 (μs) │ 中位 (μs) │ 标准差   │ 占比  │\n";
     std::cout << "├────┼──────────────────────────┼─────────────────"
-                 "────────┼────────────┼──────────┼───────┤\n";
+                 "────────┼────────────┼────────────┼──────────┼───────┤\n";
 
     for (size_t i = 0; i < entries.size(); ++i) {
         const auto& e = entries[i];
@@ -103,11 +96,12 @@ static void print_table(const std::string& title,
                   << std::left  << std::setw(23) << e.formula << " │ "
                   << std::right << std::setw(10) << std::fixed
                   << std::setprecision(2) << e.timing.avg_us << " │ "
+                  << std::setw(10) << std::setprecision(2) << e.timing.median_us << " │ "
                   << std::setw(8) << std::setprecision(2) << e.timing.stddev_us << " │ "
                   << std::setw(5) << std::setprecision(1) << pct << "│\n";
     }
     std::cout << "└────┴──────────────────────────┴─────────────────"
-                 "────────┴────────────┴──────────┴───────┘\n";
+                 "────────┴────────────┴────────────┴──────────┴───────┘\n";
 }
 
 // Write steps to bdec_oss in plain text (defined after StepEntry struct)
@@ -122,7 +116,8 @@ static void dump_steps_to_oss(const std::string& title,
         bdec_oss << "  " << std::setw(2) << (i+1) << " "
                  << std::left << std::setw(26) << e.name << " "
                  << std::fixed << std::setprecision(2)
-                 << std::setw(7) << e.timing.avg_us << " us  std="
+                 << std::setw(7) << e.timing.avg_us << " us  med="
+                 << std::setw(6) << e.timing.median_us << "  std="
                  << std::setw(6) << e.timing.stddev_us << "  "
                  << std::setprecision(1) << std::setw(5) << pct << "%\n";
     }
@@ -131,7 +126,7 @@ static void dump_steps_to_oss(const std::string& title,
 /* ══════════════════════════════════════════════════
    主函数: 逐步拆解 PartDec + FinDec 并计时
    ══════════════════════════════════════════════════ */
-static void run_benchmark(int n, int d, long q, int N_id, int REPS)
+static void run_benchmark(int n, int d, long q, int N_id)
 {
     // Force use of unified defaults for mp12 parameters (ignore caller q)
     auto __u_mp = unified::default_mp12_params();
@@ -147,7 +142,7 @@ static void run_benchmark(int n, int d, long q, int N_id, int REPS)
               << ", N=" << N_id
               << ", R=" << params.R << ", M=" << params.M
               << ", k=" << params.k
-              << "\n  每步重复 " << REPS << " 次取平均\n";
+              << "\n  每步 1000 次 (含 50 预热) 取平均\n";
     std::cout << "══════════════════════════════════════════════════\n";
 
     /* ─── 预处理: 生成密钥、密文 ─── */
@@ -192,7 +187,7 @@ static void run_benchmark(int n, int d, long q, int N_id, int REPS)
         "ŵ=[0,..,0,⌈q/2⌉] (R)",
         bench([&](){
             w_hat = build_w_hat(params.R, q);
-        }, REPS)
+        })
     });
 
     /* ── Step 2: ŵ → 列矩阵 (R×1) ── */
@@ -204,7 +199,7 @@ static void run_benchmark(int n, int d, long q, int N_id, int REPS)
             w_col = Mat(params.R, Vec(1));
             for (int i = 0; i < params.R; ++i)
                 w_col[i][0] = w_hat[i];
-        }, REPS)
+        })
     });
 
     /* ── Step 3: G⁻¹(ŵ^T) — gadget_inverse ── */
@@ -215,7 +210,7 @@ static void run_benchmark(int n, int d, long q, int N_id, int REPS)
         "gadget_inv (R×1→M×1)",
         bench([&](){
             u_col = gadget_inverse(w_col, q, b);
-        }, REPS)
+        })
     });
 
     /* ── Step 4: 列矩阵 → Vec ── */
@@ -227,7 +222,7 @@ static void run_benchmark(int n, int d, long q, int N_id, int REPS)
             u = Vec(params.M);
             for (int i = 0; i < params.M; ++i)
                 u[i] = u_col[i][0];
-        }, REPS)
+        })
     });
     u = Vec(params.M);
     for (int i = 0; i < params.M; ++i) u[i] = u_col[i][0];
@@ -238,7 +233,7 @@ static void run_benchmark(int n, int d, long q, int N_id, int REPS)
         "extract_block (R×M)",
         bench([&](){
             Ckj = extract_block(Ch, k_idx, 0, params.R, params.M);
-        }, REPS)
+        })
     });
 
     /* ── Step 6: 向量-矩阵乘 t_k · Ĉ_{k,j} ── */
@@ -248,7 +243,7 @@ static void run_benchmark(int n, int d, long q, int N_id, int REPS)
         "vec_mat_mul (1×R·R×M)",
         bench([&](){
             vj = vec_mat_mul(t_k, Ckj, q);
-        }, REPS)
+        })
     });
 
     /* ── Step 7: 向量内积 v_j · u ── */
@@ -258,7 +253,7 @@ static void run_benchmark(int n, int d, long q, int N_id, int REPS)
         "dot (M)",
         bench([&](){
             dot_val = vec_dot_mod(vj, u, q);
-        }, REPS)
+        })
     });
 
     /* ── Step 8: γ_k 累加 (N个块的总循环) ── */
@@ -272,7 +267,7 @@ static void run_benchmark(int n, int d, long q, int N_id, int REPS)
                 Vec v   = vec_mat_mul(t_k, blk, q);
                 gamma_k = mod_pos(gamma_k + vec_dot_mod(v, u, q), q);
             }
-        }, REPS)
+        })
     });
 
     /* ── Step 9: 掩蔽噪声采样 ── */
@@ -283,7 +278,7 @@ static void run_benchmark(int n, int d, long q, int N_id, int REPS)
         "uniform [-B_sm,B_sm]",
         bench([&](){
             e_sm = sample_symmetric(B_sm, noise_rng);
-        }, REPS)
+        })
     });
 
     /* ── Step 10: ED_k = γ_k + e^{sm} ── */
@@ -292,13 +287,13 @@ static void run_benchmark(int n, int d, long q, int N_id, int REPS)
         "mod_pos (标量加法)",
         bench([&](){
             ED_k = mod_pos(gamma_k + e_sm, q);
-        }, REPS)
+        })
     });
 
     /* ── 完整 PartDec (单个身份) ── */
     TimingResult full_partdec = bench([&](){
         part_dec(Ch, k_idx, t_k, params, 42);
-    }, REPS);
+    });
 
     steps.push_back({
         "★ PartDec 完整 (单身份)",
@@ -331,7 +326,7 @@ static void run_benchmark(int n, int d, long q, int N_id, int REPS)
             p_sum = 0;
             for (int i = 0; i < N_id; ++i)
                 p_sum = mod_pos(p_sum + ED_all[i], q);
-        }, REPS)
+        })
     });
 
     /* ── FD-2: 中心化 mod ── */
@@ -340,7 +335,7 @@ static void run_benchmark(int n, int d, long q, int N_id, int REPS)
         "(-q/2, q/2] 映射",
         bench([&](){
             (void)center_mod(p_sum, q);
-        }, REPS)
+        })
     });
 
     /* ── FD-3: |p| 与 q/4 比较 ── */
@@ -351,13 +346,13 @@ static void run_benchmark(int n, int d, long q, int N_id, int REPS)
         bench([&](){
             long ap = (p_c >= 0) ? p_c : -p_c;
             (void)(ap > q / 4 ? 1 : 0);
-        }, REPS)
+        })
     });
 
     /* ── FinDec 完整 ── */
     TimingResult full_findec = bench([&](){
         fin_dec(ED_all, q);
-    }, REPS);
+    });
     fin_steps.push_back({
         "★ FinDec 完整",
         "steps 1–3 combined",
@@ -377,7 +372,7 @@ static void run_benchmark(int n, int d, long q, int N_id, int REPS)
         for (int i = 0; i < N_id; ++i)
             ed[i] = part_dec(Ch, i, keys[i], params, 200 + i);
         fin_dec(ed, q);
-    }, REPS);
+    });
 
     std::cout << "\n┌─────────────────────────────────────────────────────┐\n";
     std::cout << "│  全流程汇总 (N=" << N_id << " × PartDec + FinDec)"
@@ -435,7 +430,6 @@ static void scaling_test()
         {4, 2, 5, default_q},
     };
 
-    const int REPS = 200;
     const int b = unified::default_mp12_params().b;
 
     for (auto& cfg : configs) {
@@ -458,7 +452,7 @@ static void scaling_test()
         Vec wh = build_w_hat(p.R, cfg.q);
         Mat wc(p.R, Vec(1));
         for (int i = 0; i < p.R; ++i) wc[i][0] = wh[i];
-        TimingResult t_ginv = bench([&](){ gadget_inverse(wc, cfg.q, b); }, REPS);
+        TimingResult t_ginv = bench([&](){ gadget_inverse(wc, cfg.q, b); });
 
         /* γ_k 计算 (extract + vec_mat_mul + dot) × N 块 */
         Mat uc = gadget_inverse(wc, cfg.q, b);
@@ -472,12 +466,12 @@ static void scaling_test()
                 Vec v   = vec_mat_mul(keys[0], blk, cfg.q);
                 gamma = mod_pos(gamma + vec_dot_mod(v, u, cfg.q), cfg.q);
             }
-        }, REPS);
+        });
 
         /* 完整 PartDec */
         TimingResult t_full = bench([&](){
             part_dec(Ch, 0, keys[0], p, 42);
-        }, REPS);
+        });
 
         std::cout << "║ " << std::setw(3) << cfg.n
                   << " │ " << std::setw(3) << cfg.d
@@ -510,7 +504,7 @@ static void scaling_test()
         Vec wh2 = build_w_hat(p2.R, cfg.q);
         Mat wc2(p2.R, Vec(1));
         for (int i = 0; i < p2.R; ++i) wc2[i][0] = wh2[i];
-        auto t_g = bench([&](){ gadget_inverse(wc2, cfg.q, b); }, 200);
+        auto t_g = bench([&](){ gadget_inverse(wc2, cfg.q, b); });
         Mat uc2 = gadget_inverse(wc2, cfg.q, b);
         Vec u2(p2.M); for (int i = 0; i < p2.M; ++i) u2[i] = uc2[i][0];
         std::mt19937_64 rr(42);
@@ -528,8 +522,8 @@ static void scaling_test()
                 Vec v = vec_mat_mul(ks2[0], blk, cfg.q);
                 gamma = mod_pos(gamma + vec_dot_mod(v, u2, cfg.q), cfg.q);
             }
-        }, 200);
-        auto t_f = bench([&](){ part_dec(Ch2, 0, ks2[0], p2, 42); }, 200);
+        });
+        auto t_f = bench([&](){ part_dec(Ch2, 0, ks2[0], p2, 42); });
         bdec_oss << "  " << std::setw(3) << cfg.n << " " << std::setw(3) << cfg.d
                  << " " << std::setw(5) << cfg.q << " " << std::setw(3) << cfg.N
                  << " " << std::setw(4) << p2.R
@@ -556,13 +550,13 @@ void run_bench_decrypt()
     /* 详细拆解 (统一 128-bit 参数) */
     {
         auto mp = unified::default_midparams_128(1, 3);
-        run_benchmark(mp.n, 1, mp.q, mp.N_id, 500);
+        run_benchmark(mp.n, 1, mp.q, mp.N_id);
     }
 
     /* 较大参数 (仍使用统一 modulus q; 调整深度与身份数) */
     {
         auto mp2 = unified::default_midparams_128(2, 5);
-        run_benchmark(mp2.n, 2, mp2.q, mp2.N_id, 100);
+        run_benchmark(mp2.n, 2, mp2.q, mp2.N_id);
     }
 
     /* 缩放趋势对比 */

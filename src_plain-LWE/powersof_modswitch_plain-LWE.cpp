@@ -215,59 +215,41 @@ void run_test_powersof_modswitch() {
    Benchmark: Powersof2 with modulus switch 纯耗时
    ─────────────────────────────────────────────────── */
 static void bench_powersof_modswitch() {
-    using Clock = std::chrono::high_resolution_clock;
-    constexpr int WARMUP  = 3;
-    constexpr int ITERS   = 20;
-
     auto u_p = unified::default_mp12_params();
     long q = u_p.q;
     long p = 17;
     int  m = 8;
 
-    Vec e0 = unienc::sample_lwe_noise(m, 3.2, 42);
+    int seed = 42;
 
-    /* ── 预热 ── */
-    for (int i = 0; i < WARMUP; ++i) {
-        (void)powers_of_2_with_modswitch(e0, p, q, true);
-    }
-
-    /* ── 计时 ── */
-    std::vector<double> times_us;
-    times_us.reserve(ITERS);
-    for (int i = 0; i < ITERS; ++i) {
-        Vec e = unienc::sample_lwe_noise(m, 3.2, (uint64_t)(i + 1) * 100003);
-        auto t0 = Clock::now();
+    std::cout << "  Benchmarking ModSwitch (1000 rounds, 50 warmup)... " << std::flush;
+    auto stats = run_benchmark([&]() {
+        Vec e = unienc::sample_lwe_noise(m, 3.2, (uint64_t)(++seed) * 100003);
         (void)powers_of_2_with_modswitch(e, p, q, true);
-        auto t1 = Clock::now();
-        double us = std::chrono::duration<double, std::micro>(t1 - t0).count();
-        times_us.push_back(us);
-    }
+    }, 1000, 50);
+    std::cout << "done\n" << std::flush;
 
-    /* ── 统计 ── */
-    double sum_us = std::accumulate(times_us.begin(), times_us.end(), 0.0);
-    double avg_us = sum_us / ITERS;
-    double min_us = *std::min_element(times_us.begin(), times_us.end());
-    double max_us = *std::max_element(times_us.begin(), times_us.end());
-    double var_us = 0.0;
-    for (double t : times_us) { double d = t - avg_us; var_us += d * d; }
-    var_us /= (ITERS > 1) ? (ITERS - 1) : 1;
-    double std_us = std::sqrt(var_us);
-
-    std::ostringstream oss;
-    oss << "\n=== Benchmark: Powersof2 with ModSwitch (IBE keygen) ===\n"
-        << "  Parameters: p=" << p << ", q=" << q
-        << ", m=" << m << "\n"
-        << "  Warmup rounds : " << WARMUP << "\n"
-        << "  Timed  rounds : " << ITERS << "\n\n"
-        << std::fixed << std::setprecision(1)
-        << "  Average   : " << std::setw(8) << avg_us << " µs\n"
-        << "  Min       : " << std::setw(8) << min_us << " µs\n"
-        << "  Max       : " << std::setw(8) << max_us << " µs\n"
-        << "  StdDev    : " << std::setw(8) << std_us << " µs\n"
-        << "  Throughput: " << std::setw(8)
-        << (1e6 / avg_us) << " ops/s\n";
+    auto report = [&](std::ostream& os) {
+        os << "\n=== Benchmark: Powersof2 with ModSwitch (IBE keygen) ===\n"
+           << "  Parameters: p=" << p << ", q=" << q
+           << ", m=" << m << "\n"
+           << "  Total iterations : 1000\n"
+           << "  Warmup discarded : 50\n"
+           << "  Active samples   : " << stats.active_samples << "\n\n"
+           << std::fixed << std::setprecision(1)
+           << "  Average   : " << std::setw(8) << stats.avg_us << " us\n"
+           << "  Median    : " << std::setw(8) << stats.median_us << " us\n"
+           << "  StdDev    : " << std::setw(8) << stats.stddev_us << " us\n"
+           << "  Min       : " << std::setw(8) << stats.min_us << " us\n"
+           << "  Max       : " << std::setw(8) << stats.max_us << " us\n"
+           << "  Throughput: " << std::setw(8)
+           << (1e6 / stats.avg_us) << " ops/s\n";
+    };
 
     std::cout << "\n--- Benchmark: Powersof2 ModSwitch ---\n";
-    std::cout << oss.str();
+    report(std::cout);
+
+    std::ostringstream oss;
+    report(oss);
     bench_write(oss.str());
 }

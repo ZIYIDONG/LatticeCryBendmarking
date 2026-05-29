@@ -127,10 +127,6 @@ void run_test_expand() {
    Benchmark 1: Extend (GSW.LComb) 纯耗时
    ─────────────────────────────────────────────────── */
 static void bench_extend() {
-    using Clock = std::chrono::high_resolution_clock;
-    constexpr int WARMUP = 3;
-    constexpr int ITERS  = 20;
-
     const size_t d = 3, N = d, m = 6;
     auto mp = unified::default_midparams_128((int)d, (int)N);
     const long q = mp.q;
@@ -141,7 +137,6 @@ static void bench_extend() {
     std::uniform_int_distribution<long> uni(0, q - 1);
     std::bernoulli_distribution bit(0.5);
 
-    /* ── 构造测试数据（不计入时间）── */
     UniEncU U(m, std::vector<Vec>(m, Vec(R, 0)));
     for (size_t r = 0; r < m; ++r)
         for (size_t s = 0; s < m; ++s)
@@ -150,41 +145,34 @@ static void bench_extend() {
     Vec b_i(m), b_j(m);
     for (size_t t = 0; t < m; ++t) { b_i[t] = uni(rng); b_j[t] = uni(rng); }
 
-    /* ── 预热 ── */
-    for (int k = 0; k < WARMUP; ++k) (void)extend(U, b_i, b_j, q);
-
-    /* ── 计时 ── */
-    std::vector<double> times_us; times_us.reserve(ITERS);
-    for (int k = 0; k < ITERS; ++k) {
-        b_i[0] = uni(rng); b_j[0] = uni(rng);  // 微调以防止编译器优化
-        auto t0 = Clock::now();
+    std::cout << "  Benchmarking Extend (1000 rounds, 50 warmup)... " << std::flush;
+    auto stats = run_benchmark([&]() {
+        b_i[0] = uni(rng); b_j[0] = uni(rng);
         (void)extend(U, b_i, b_j, q);
-        auto t1 = Clock::now();
-        times_us.push_back(std::chrono::duration<double, std::micro>(t1 - t0).count());
-    }
+    }, 1000, 50);
+    std::cout << "done\n" << std::flush;
 
-    double sum_us = std::accumulate(times_us.begin(), times_us.end(), 0.0);
-    double avg_us = sum_us / ITERS;
-    double min_us = *std::min_element(times_us.begin(), times_us.end());
-    double max_us = *std::max_element(times_us.begin(), times_us.end());
-    double var_us = 0;
-    for (double t : times_us) { double d = t - avg_us; var_us += d * d; }
-    var_us /= (ITERS > 1) ? (ITERS - 1) : 1;
+    auto report = [&](std::ostream& os) {
+        os << "\n=== Benchmark: Extend (GSW.LComb) ===\n"
+           << "  Parameters: d=" << d << ", N=" << N << ", n=" << n
+           << ", q=" << q << ", R=" << R << ", m=" << m << "\n"
+           << "  Total iterations : 1000\n"
+           << "  Warmup discarded : 50\n"
+           << "  Active samples   : " << stats.active_samples << "\n\n"
+           << std::fixed << std::setprecision(1)
+           << "  Average   : " << std::setw(8) << stats.avg_us << " us\n"
+           << "  Median    : " << std::setw(8) << stats.median_us << " us\n"
+           << "  StdDev    : " << std::setw(8) << stats.stddev_us << " us\n"
+           << "  Min       : " << std::setw(8) << stats.min_us << " us\n"
+           << "  Max       : " << std::setw(8) << stats.max_us << " us\n"
+           << "  Throughput: " << std::setw(8) << (1e6 / stats.avg_us) << " ops/s\n";
+    };
+
+    std::cout << "\n--- Benchmark: Extend ---\n";
+    report(std::cout);
 
     std::ostringstream oss;
-    oss << "\n=== Benchmark: Extend (GSW.LComb) ===\n"
-        << "  Parameters: d=" << d << ", N=" << N << ", n=" << n
-        << ", q=" << q << ", R=" << R << ", m=" << m << "\n"
-        << "  Warmup rounds : " << WARMUP << "\n"
-        << "  Timed  rounds : " << ITERS << "\n\n"
-        << std::fixed << std::setprecision(1)
-        << "  Average   : " << std::setw(8) << avg_us << " µs\n"
-        << "  Min       : " << std::setw(8) << min_us << " µs\n"
-        << "  Max       : " << std::setw(8) << max_us << " µs\n"
-        << "  StdDev    : " << std::setw(8) << std::sqrt(var_us) << " µs\n"
-        << "  Throughput: " << std::setw(8) << (1e6 / avg_us) << " ops/s\n";
-
-    std::cout << "\n--- Benchmark: Extend ---\n" << oss.str();
+    report(oss);
     bench_write(oss.str());
 }
 
@@ -192,10 +180,6 @@ static void bench_extend() {
    Benchmark 2: Expand 完整操作 纯耗时
    ─────────────────────────────────────────────────── */
 static void bench_expand_full() {
-    using Clock = std::chrono::high_resolution_clock;
-    constexpr int WARMUP = 3;
-    constexpr int ITERS  = 20;
-
     const size_t d = 3, N = d, m = 6;
     auto mp = unified::default_midparams_128((int)d, (int)N);
     const long q = mp.q;
@@ -206,7 +190,6 @@ static void bench_expand_full() {
     std::uniform_int_distribution<long> uni(0, q - 1);
     std::bernoulli_distribution bit(0.5);
 
-    /* ── 构造测试数据（不计入时间）── */
     UniEncU U(m, std::vector<Vec>(m, Vec(R, 0)));
     for (size_t r = 0; r < m; ++r)
         for (size_t s = 0; s < m; ++s)
@@ -222,41 +205,34 @@ static void bench_expand_full() {
         for (size_t c = 0; c < m; ++c)
             C[r][c] = uni(rng);
 
-    /* ── 预热 ── */
-    for (int k = 0; k < WARMUP; ++k) (void)expand(U, b_rows, 1, C, q);
-
-    /* ── 计时 ── */
-    std::vector<double> times_us; times_us.reserve(ITERS);
-    for (int k = 0; k < ITERS; ++k) {
-        C[0][0] = uni(rng);  // 微调防止优化
-        auto t0 = Clock::now();
+    std::cout << "  Benchmarking Expand (1000 rounds, 50 warmup)... " << std::flush;
+    auto stats = run_benchmark([&]() {
+        C[0][0] = uni(rng);
         (void)expand(U, b_rows, 1, C, q);
-        auto t1 = Clock::now();
-        times_us.push_back(std::chrono::duration<double, std::micro>(t1 - t0).count());
-    }
+    }, 1000, 50);
+    std::cout << "done\n" << std::flush;
 
-    double sum_us = std::accumulate(times_us.begin(), times_us.end(), 0.0);
-    double avg_us = sum_us / ITERS;
-    double min_us = *std::min_element(times_us.begin(), times_us.end());
-    double max_us = *std::max_element(times_us.begin(), times_us.end());
-    double var_us = 0;
-    for (double t : times_us) { double d = t - avg_us; var_us += d * d; }
-    var_us /= (ITERS > 1) ? (ITERS - 1) : 1;
+    auto report = [&](std::ostream& os) {
+        os << "\n=== Benchmark: Expand (N×N block construction) ===\n"
+           << "  Parameters: d=" << d << ", N=" << N << ", n=" << n
+           << ", q=" << q << ", R=" << R << ", m=" << m << "\n"
+           << "  Total iterations : 1000\n"
+           << "  Warmup discarded : 50\n"
+           << "  Active samples   : " << stats.active_samples << "\n\n"
+           << std::fixed << std::setprecision(1)
+           << "  Average   : " << std::setw(8) << stats.avg_us << " us\n"
+           << "  Median    : " << std::setw(8) << stats.median_us << " us\n"
+           << "  StdDev    : " << std::setw(8) << stats.stddev_us << " us\n"
+           << "  Min       : " << std::setw(8) << stats.min_us << " us\n"
+           << "  Max       : " << std::setw(8) << stats.max_us << " us\n"
+           << "  Throughput: " << std::setw(8) << (1e6 / stats.avg_us) << " ops/s\n";
+    };
+
+    std::cout << "\n--- Benchmark: Expand ---\n";
+    report(std::cout);
 
     std::ostringstream oss;
-    oss << "\n=== Benchmark: Expand (N×N block construction) ===\n"
-        << "  Parameters: d=" << d << ", N=" << N << ", n=" << n
-        << ", q=" << q << ", R=" << R << ", m=" << m << "\n"
-        << "  Warmup rounds : " << WARMUP << "\n"
-        << "  Timed  rounds : " << ITERS << "\n\n"
-        << std::fixed << std::setprecision(1)
-        << "  Average   : " << std::setw(8) << avg_us << " µs\n"
-        << "  Min       : " << std::setw(8) << min_us << " µs\n"
-        << "  Max       : " << std::setw(8) << max_us << " µs\n"
-        << "  StdDev    : " << std::setw(8) << std::sqrt(var_us) << " µs\n"
-        << "  Throughput: " << std::setw(8) << (1e6 / avg_us) << " ops/s\n";
-
-    std::cout << "\n--- Benchmark: Expand ---\n" << oss.str();
+    report(oss);
     bench_write(oss.str());
 }
 

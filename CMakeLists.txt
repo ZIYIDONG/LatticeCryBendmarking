@@ -87,3 +87,14 @@ add_executable(test_ibags_all
 target_include_directories(test_ibags_all PRIVATE ${INC_RLWEOR_NTRU_DIR})
 target_compile_options(test_ibags_all PRIVATE -Wall -Wextra)
 target_link_libraries(test_ibags_all PRIVATE ibags_core)
+
+# ============================================================================
+# IBAGS 基准测试
+# ============================================================================
+add_executable(bench_ibags
+    src_RLWEorNTRU/bench_ibags.cpp
+    src_RLWEorNTRU/bench_utils.cpp
+)
+target_include_directories(bench_ibags PRIVATE ${INC_RLWEOR_NTRU_DIR})
+target_compile_options(bench_ibags PRIVATE -Wall -Wextra)
+target_link_libraries(bench_ibags PRIVATE ibags_core)

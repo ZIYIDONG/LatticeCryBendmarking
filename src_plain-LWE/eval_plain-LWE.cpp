@@ -140,10 +140,6 @@ void run_test_eval() {
    Benchmark 1: AddEval 纯耗时
    ─────────────────────────────────────────────────── */
 static void bench_add_eval() {
-    using Clock = std::chrono::high_resolution_clock;
-    constexpr int WARMUP = 3;
-    constexpr int ITERS  = 20;
-
     auto mp = unified::default_mp12_params();
     const long q = mp.q;
     const int  b = mp.b;
@@ -154,7 +150,6 @@ static void bench_add_eval() {
     std::mt19937 rng(42);
     std::uniform_int_distribution<long> uni(0, q - 1);
 
-    /* ── 构造测试数据（不计入时间）── */
     Mat C1(r, Vec(c)), C2(r, Vec(c));
     for (size_t i = 0; i < r; ++i)
         for (size_t j = 0; j < c; ++j) {
@@ -162,42 +157,35 @@ static void bench_add_eval() {
             C2[i][j] = uni(rng);
         }
 
-    /* ── 预热 ── */
-    for (int i = 0; i < WARMUP; ++i) (void)add_eval(C1, C2, q);
-
-    /* ── 计时 ── */
-    std::vector<double> times_us; times_us.reserve(ITERS);
-    for (int i = 0; i < ITERS; ++i) {
+    std::cout << "  Benchmarking AddEval (1000 rounds, 50 warmup)... " << std::flush;
+    auto stats = run_benchmark([&]() {
         C1[0][0] = uni(rng);
-        auto t0 = Clock::now();
         (void)add_eval(C1, C2, q);
-        auto t1 = Clock::now();
-        times_us.push_back(std::chrono::duration<double, std::micro>(t1 - t0).count());
-    }
+    }, 1000, 50);
+    std::cout << "done\n" << std::flush;
 
-    double sum_us = std::accumulate(times_us.begin(), times_us.end(), 0.0);
-    double avg_us = sum_us / ITERS;
-    double min_us = *std::min_element(times_us.begin(), times_us.end());
-    double max_us = *std::max_element(times_us.begin(), times_us.end());
-    double var_us = 0;
-    for (double t : times_us) { double d = t - avg_us; var_us += d * d; }
-    var_us /= (ITERS > 1) ? (ITERS - 1) : 1;
+    auto report = [&](std::ostream& os) {
+        os << "\n=== Benchmark: AddEval (GSW homomorphic addition) ===\n"
+           << "  Parameters: q=" << q << ", b=" << b
+           << ", k=" << k << ", r=" << r << ", c=" << c << "\n"
+           << "  Total iterations : 1000\n"
+           << "  Warmup discarded : 50\n"
+           << "  Active samples   : " << stats.active_samples << "\n\n"
+           << std::fixed << std::setprecision(1)
+           << "  Average   : " << std::setw(8) << stats.avg_us << " us\n"
+           << "  Median    : " << std::setw(8) << stats.median_us << " us\n"
+           << "  StdDev    : " << std::setw(8) << stats.stddev_us << " us\n"
+           << "  Min       : " << std::setw(8) << stats.min_us << " us\n"
+           << "  Max       : " << std::setw(8) << stats.max_us << " us\n"
+           << "  Throughput: " << std::setw(8)
+           << (1e6 / stats.avg_us) << " ops/s\n";
+    };
+
+    std::cout << "\n--- Benchmark: AddEval ---\n";
+    report(std::cout);
 
     std::ostringstream oss;
-    oss << "\n=== Benchmark: AddEval (GSW homomorphic addition) ===\n"
-        << "  Parameters: q=" << q << ", b=" << b
-        << ", k=" << k << ", r=" << r << ", c=" << c << "\n"
-        << "  Warmup rounds : " << WARMUP << "\n"
-        << "  Timed  rounds : " << ITERS << "\n\n"
-        << std::fixed << std::setprecision(1)
-        << "  Average   : " << std::setw(8) << avg_us << " µs\n"
-        << "  Min       : " << std::setw(8) << min_us << " µs\n"
-        << "  Max       : " << std::setw(8) << max_us << " µs\n"
-        << "  StdDev    : " << std::setw(8) << std::sqrt(var_us) << " µs\n"
-        << "  Throughput: " << std::setw(8)
-        << (1e6 / avg_us) << " ops/s\n";
-
-    std::cout << "\n--- Benchmark: AddEval ---\n" << oss.str();
+    report(oss);
     bench_write(oss.str());
 }
 
@@ -205,10 +193,6 @@ static void bench_add_eval() {
    Benchmark 2: MultEval 纯耗时
    ─────────────────────────────────────────────────── */
 static void bench_mult_eval() {
-    using Clock = std::chrono::high_resolution_clock;
-    constexpr int WARMUP = 3;
-    constexpr int ITERS  = 20;
-
     auto mp = unified::default_mp12_params();
     const long q = mp.q;
     const int  b = mp.b;
@@ -219,7 +203,6 @@ static void bench_mult_eval() {
     std::mt19937 rng(42);
     std::uniform_int_distribution<long> uni(0, q - 1);
 
-    /* ── 构造测试数据（不计入时间）── */
     Mat G = build_gadget(r, q, b);
     Mat C1(r, Vec(c)), C2(r, Vec(c));
     for (size_t i = 0; i < r; ++i)
@@ -228,41 +211,34 @@ static void bench_mult_eval() {
             C2[i][j] = uni(rng);
         }
 
-    /* ── 预热 ── */
-    for (int i = 0; i < WARMUP; ++i) (void)mult_eval(C1, C2, q, b);
-
-    /* ── 计时 ── */
-    std::vector<double> times_us; times_us.reserve(ITERS);
-    for (int i = 0; i < ITERS; ++i) {
+    std::cout << "  Benchmarking MultEval (1000 rounds, 50 warmup)... " << std::flush;
+    auto stats = run_benchmark([&]() {
         C1[0][0] = uni(rng);
-        auto t0 = Clock::now();
         (void)mult_eval(C1, C2, q, b);
-        auto t1 = Clock::now();
-        times_us.push_back(std::chrono::duration<double, std::micro>(t1 - t0).count());
-    }
+    }, 1000, 50);
+    std::cout << "done\n" << std::flush;
 
-    double sum_us = std::accumulate(times_us.begin(), times_us.end(), 0.0);
-    double avg_us = sum_us / ITERS;
-    double min_us = *std::min_element(times_us.begin(), times_us.end());
-    double max_us = *std::max_element(times_us.begin(), times_us.end());
-    double var_us = 0;
-    for (double t : times_us) { double d = t - avg_us; var_us += d * d; }
-    var_us /= (ITERS > 1) ? (ITERS - 1) : 1;
+    auto report = [&](std::ostream& os) {
+        os << "\n=== Benchmark: MultEval (GSW homomorphic multiplication) ===\n"
+           << "  Parameters: q=" << q << ", b=" << b
+           << ", k=" << k << ", r=" << r << ", c=" << c << "\n"
+           << "  Total iterations : 1000\n"
+           << "  Warmup discarded : 50\n"
+           << "  Active samples   : " << stats.active_samples << "\n\n"
+           << std::fixed << std::setprecision(1)
+           << "  Average   : " << std::setw(8) << stats.avg_us << " us\n"
+           << "  Median    : " << std::setw(8) << stats.median_us << " us\n"
+           << "  StdDev    : " << std::setw(8) << stats.stddev_us << " us\n"
+           << "  Min       : " << std::setw(8) << stats.min_us << " us\n"
+           << "  Max       : " << std::setw(8) << stats.max_us << " us\n"
+           << "  Throughput: " << std::setw(8)
+           << (1e6 / stats.avg_us) << " ops/s\n";
+    };
+
+    std::cout << "\n--- Benchmark: MultEval ---\n";
+    report(std::cout);
 
     std::ostringstream oss;
-    oss << "\n=== Benchmark: MultEval (GSW homomorphic multiplication) ===\n"
-        << "  Parameters: q=" << q << ", b=" << b
-        << ", k=" << k << ", r=" << r << ", c=" << c << "\n"
-        << "  Warmup rounds : " << WARMUP << "\n"
-        << "  Timed  rounds : " << ITERS << "\n\n"
-        << std::fixed << std::setprecision(1)
-        << "  Average   : " << std::setw(8) << avg_us << " µs\n"
-        << "  Min       : " << std::setw(8) << min_us << " µs\n"
-        << "  Max       : " << std::setw(8) << max_us << " µs\n"
-        << "  StdDev    : " << std::setw(8) << std::sqrt(var_us) << " µs\n"
-        << "  Throughput: " << std::setw(8)
-        << (1e6 / avg_us) << " ops/s\n";
-
-    std::cout << "\n--- Benchmark: MultEval ---\n" << oss.str();
+    report(oss);
     bench_write(oss.str());
 }

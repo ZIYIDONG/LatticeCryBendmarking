@@ -14,10 +14,7 @@
 #include <iostream>
 #include <iomanip>
 #include <cmath>
-#include <chrono>
 #include <string>
-#include <numeric>
-#include <fstream>
 #include <sstream>
 #include "bench_utils_plain-LWE.h"
 
@@ -142,9 +139,7 @@ void test_sample_pre_tagged(const Params& p) {
         Vec u(p.n);
         for (int i = 0; i < p.n; i++) u[i] = usampler.sample();
 
-        auto t0 = std::chrono::high_resolution_clock::now();
         Vec x = sample_pre_tagged(p, td_H, u, (uint64_t)t * 13 + 7);
-        auto t1 = std::chrono::high_resolution_clock::now();
 
         bool ok = verify(p, td_H.A, x, u);
         if (ok) pass++;
@@ -388,156 +383,81 @@ void test_ibe_simulation(const Params& p) {
 /* ───────────────────────────────────────────────────
     Benchmark 1: DelTrapGen 纯耗时
    ─────────────────────────────────────────────────── */
-/**
- * bench_del_trap_gen — 纯粹测量 del_trap_gen() 的耗时
- *
- *   ① 生成基础陷门（不计入时间）
- *   ② 预热 3 轮
- *   ③ 20 轮计时（不同随机 tag H  + 不同 seed）
- *   ④ 统计：平均 / 最小 / 最大 / 标准差（µs）
- */
 void bench_del_trap_gen(const Params& p) {
-    using Clock = std::chrono::high_resolution_clock;
-    constexpr int WARMUP  = 3;
-    constexpr int ITERS   = 20;
-
-    /* ── 基础陷门（一次性，不计入时间）── */
     Trapdoor base = gen_trap(p, 42);
 
-    /* ── 预热 ── */
-    std::cout << "  Warming up (" << WARMUP << " rounds)..." << std::flush;
-    for (int i = 0; i < WARMUP; ++i) {
-        Mat H = random_invertible_mat(p.n, p.q, (uint64_t)(i + 1) * 100003);
+    std::cout << "  Benchmarking (1000 rounds, 50 warmup)... " << std::flush;
+    int seed_base = 1;
+    auto stats = run_benchmark([&]() {
+        Mat H = random_invertible_mat(p.n, p.q, (uint64_t)(++seed_base) * 500009);
         (void)del_trap_gen(p, base, H);
-        std::cout << "." << std::flush;
-    }
-    std::cout << " done\n" << std::flush;
+    }, 1000, 50);
+    std::cout << "done\n" << std::flush;
 
-    /* ── 计时 ── */
-    std::vector<double> times_us;
-    times_us.reserve(ITERS);
-    std::cout << "  Benchmarking (" << ITERS << " rounds): " << std::flush;
-    int pm = std::max(1, ITERS / 5);
-    for (int i = 0; i < ITERS; ++i) {
-        Mat H = random_invertible_mat(p.n, p.q, (uint64_t)(i + 1) * 500009);
-        auto t0 = Clock::now();
-        (void)del_trap_gen(p, base, H);
-        auto t1 = Clock::now();
-        double us = std::chrono::duration<double, std::micro>(t1 - t0).count();
-        times_us.push_back(us);
-        if ((i + 1) % pm == 0 || i == ITERS - 1)
-            std::cout << " " << (i + 1) << "/" << ITERS << std::flush;
-    }
-    std::cout << " done\n" << std::flush;
+    auto report = [&](std::ostream& os) {
+        os << "\n=== Benchmark: DelTrapGen (MP12 §5) ===\n"
+           << "  Parameters: n=" << p.n << ", q=" << p.q
+           << ", b=" << p.b << ", k=" << p.k
+           << ", m=" << p.m << ", σ=" << p.sigma << "\n"
+           << "  Total iterations : 1000\n"
+           << "  Warmup discarded : 50\n"
+           << "  Active samples   : " << stats.active_samples << "\n\n"
+           << std::fixed << std::setprecision(1)
+           << "  Average   : " << std::setw(8) << stats.avg_us    << " us\n"
+           << "  Median    : " << std::setw(8) << stats.median_us << " us\n"
+           << "  StdDev    : " << std::setw(8) << stats.stddev_us << " us\n"
+           << "  Min       : " << std::setw(8) << stats.min_us    << " us\n"
+           << "  Max       : " << std::setw(8) << stats.max_us    << " us\n"
+           << "  Throughput: " << std::setw(8)
+           << (1e6 / stats.avg_us) << " ops/s\n";
+    };
+    report(std::cout);
 
-    /* ── 统计 ── */
-    double sum_us = std::accumulate(times_us.begin(), times_us.end(), 0.0);
-    double avg_us = sum_us / ITERS;
-    double min_us = *std::min_element(times_us.begin(), times_us.end());
-    double max_us = *std::max_element(times_us.begin(), times_us.end());
-    double var_us = 0.0;
-    for (double t : times_us) { double d = t - avg_us; var_us += d * d; }
-    var_us /= (ITERS > 1) ? (ITERS - 1) : 1;
-    double std_us = std::sqrt(var_us);
-
-    /* ── 格式化输出 ── */
     std::ostringstream oss;
-    oss << "\n=== Benchmark: DelTrapGen (MP12 §5) ===\n"
-        << "  Parameters: n=" << p.n << ", q=" << p.q
-        << ", b=" << p.b << ", k=" << p.k
-        << ", m=" << p.m << ", σ=" << p.sigma << "\n"
-        << "  Warmup rounds : " << WARMUP << "\n"
-        << "  Timed  rounds : " << ITERS << "\n\n"
-        << std::fixed << std::setprecision(1)
-        << "  Average   : " << std::setw(8) << avg_us << " µs\n"
-        << "  Min       : " << std::setw(8) << min_us << " µs\n"
-        << "  Max       : " << std::setw(8) << max_us << " µs\n"
-        << "  StdDev    : " << std::setw(8) << std_us << " µs\n"
-        << "  Throughput: " << std::setw(8)
-        << (1e6 / avg_us) << " ops/s\n";
-
-    std::cout << oss.str();
+    report(oss);
     bench_write(oss.str());
 }
 
 /* ───────────────────────────────────────────────────
    Benchmark 2: SamplePre（带 tag）纯耗时
    ─────────────────────────────────────────────────── */
-/**
- * bench_sample_pre_tagged — 纯粹测量 sample_pre_tagged() 的耗时
- *
- *   ① 生成基础陷门 + 委托生成 tagged 陷门（不计入时间）
- *   ② 预热 3 轮（含随机目标 u）
- *   ③ 20 轮计时
- *   ④ 统计：平均 / 最小 / 最大 / 标准差（µs）
- */
 void bench_sample_pre_tagged(const Params& p) {
-    using Clock = std::chrono::high_resolution_clock;
-    constexpr int WARMUP  = 3;
-    constexpr int ITERS   = 20;
-
-    /* ── 建立 tagged 陷门（一次性，不计入时间）── */
     Trapdoor base = gen_trap(p, 100);
     Mat H_tag = random_invertible_mat(p.n, p.q, 999);
     auto td_H = del_trap_gen(p, base, H_tag);
 
     UniformSampler usampler(p.q, 55);
 
-    /* ── 预热 ── */
-    std::cout << "  Warming up (" << WARMUP << " rounds)..." << std::flush;
-    for (int i = 0; i < WARMUP; ++i) {
+    std::cout << "  Benchmarking (1000 rounds, 50 warmup)... " << std::flush;
+    int seed_base = 1;
+    auto stats = run_benchmark([&]() {
         Vec u(p.n);
         for (int j = 0; j < p.n; ++j) u[j] = usampler.sample();
-        (void)sample_pre_tagged(p, td_H, u, (uint64_t)(i + 1) * 200003);
-        std::cout << "." << std::flush;
-    }
-    std::cout << " done\n" << std::flush;
+        (void)sample_pre_tagged(p, td_H, u, (uint64_t)(++seed_base) * 700001);
+    }, 1000, 50);
+    std::cout << "done\n" << std::flush;
 
-    /* ── 计时 ── */
-    std::vector<double> times_us;
-    times_us.reserve(ITERS);
-    std::cout << "  Benchmarking (" << ITERS << " rounds): " << std::flush;
-    int pm = std::max(1, ITERS / 5);
-    for (int i = 0; i < ITERS; ++i) {
-        Vec u(p.n);
-        for (int j = 0; j < p.n; ++j) u[j] = usampler.sample();
-        auto t0 = Clock::now();
-        (void)sample_pre_tagged(p, td_H, u, (uint64_t)(i + 1) * 700001);
-        auto t1 = Clock::now();
-        double us = std::chrono::duration<double, std::micro>(t1 - t0).count();
-        times_us.push_back(us);
-        if ((i + 1) % pm == 0 || i == ITERS - 1)
-            std::cout << " " << (i + 1) << "/" << ITERS << std::flush;
-    }
-    std::cout << " done\n" << std::flush;
+    auto report = [&](std::ostream& os) {
+        os << "\n=== Benchmark: SamplePre (tagged, MP12 Algo 2) ===\n"
+           << "  Parameters: n=" << p.n << ", q=" << p.q
+           << ", b=" << p.b << ", k=" << p.k
+           << ", m=" << p.m << ", s=" << p.s << "\n"
+           << "  Total iterations : 1000\n"
+           << "  Warmup discarded : 50\n"
+           << "  Active samples   : " << stats.active_samples << "\n\n"
+           << std::fixed << std::setprecision(1)
+           << "  Average   : " << std::setw(8) << stats.avg_us    << " us\n"
+           << "  Median    : " << std::setw(8) << stats.median_us << " us\n"
+           << "  StdDev    : " << std::setw(8) << stats.stddev_us << " us\n"
+           << "  Min       : " << std::setw(8) << stats.min_us    << " us\n"
+           << "  Max       : " << std::setw(8) << stats.max_us    << " us\n"
+           << "  Throughput: " << std::setw(8)
+           << (1e6 / stats.avg_us) << " ops/s\n";
+    };
+    report(std::cout);
 
-    /* ── 统计 ── */
-    double sum_us = std::accumulate(times_us.begin(), times_us.end(), 0.0);
-    double avg_us = sum_us / ITERS;
-    double min_us = *std::min_element(times_us.begin(), times_us.end());
-    double max_us = *std::max_element(times_us.begin(), times_us.end());
-    double var_us = 0.0;
-    for (double t : times_us) { double d = t - avg_us; var_us += d * d; }
-    var_us /= (ITERS > 1) ? (ITERS - 1) : 1;
-    double std_us = std::sqrt(var_us);
-
-    /* ── 格式化输出 ── */
     std::ostringstream oss;
-    oss << "\n=== Benchmark: SamplePre (tagged, MP12 Algo 2) ===\n"
-        << "  Parameters: n=" << p.n << ", q=" << p.q
-        << ", b=" << p.b << ", k=" << p.k
-        << ", m=" << p.m << ", s=" << p.s << "\n"
-        << "  Warmup rounds : " << WARMUP << "\n"
-        << "  Timed  rounds : " << ITERS << "\n\n"
-        << std::fixed << std::setprecision(1)
-        << "  Average   : " << std::setw(8) << avg_us << " µs\n"
-        << "  Min       : " << std::setw(8) << min_us << " µs\n"
-        << "  Max       : " << std::setw(8) << max_us << " µs\n"
-        << "  StdDev    : " << std::setw(8) << std_us << " µs\n"
-        << "  Throughput: " << std::setw(8)
-        << (1e6 / avg_us) << " ops/s\n";
-
-    std::cout << oss.str();
+    report(oss);
     bench_write(oss.str());
 }
 

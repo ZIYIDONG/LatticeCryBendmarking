@@ -203,91 +203,36 @@ void test_full_roundtrip_large(const Params& p2) {
 }
 
 /* ─────────────────── GenTrap 纯基准测试 ─────────────────── */
-/**
- * bench_gen_trap — 纯粹测量 gen_trap() 的耗时
- *
- *   ① 预热: 3 次（不计入统计），消除 CPU 频率抖动和缓存冷启动干扰
- *   ② 计时: 20 次独立 gen_trap 调用，使用不同 seed
- *   ③ 统计: 平均 / 最差 / 最优 / 标准差（微秒）
- *
- *   不包含 Params 构造开销（由调用方传入已构造好的参数）
- */
 void bench_gen_trap(const Params& p) {
-    using Clock = std::chrono::high_resolution_clock;
-    constexpr int WARMUP  = 3;
-    constexpr int ITERS   = 20;
+    std::cout << "  Benchmarking (1000 rounds, 50 warmup)... " << std::flush;
+    int seed_base = 1;
+    auto stats = run_benchmark([&]() {
+        (void)gen_trap(p, (uint64_t)(++seed_base) * 7368787);
+    }, 1000, 50);
+    std::cout << "done\n" << std::flush;
 
-    /* ── 预热 ── */
-    std::cout << "  Warming up (" << WARMUP << " rounds)..." << std::flush;
-    for (int i = 0; i < WARMUP; ++i) {
-        (void)gen_trap(p, (uint64_t)(i + 1) * 999983);
-        std::cout << "." << std::flush;
-    }
-    std::cout << " done\n" << std::flush;
+    auto report = [&](std::ostream& os) {
+        os << "\n=== Benchmark: GenTrap (MP12 Algorithm 1) ===\n"
+           << "  Parameters: n=" << p.n << ", q=" << p.q
+           << ", b=" << p.b << ", k=" << p.k
+           << ", m=" << p.m << ", sigma=" << p.sigma << "\n"
+           << "  Total iterations : 1000\n"
+           << "  Warmup discarded : 50\n"
+           << "  Active samples   : " << stats.active_samples << "\n\n"
+           << std::fixed << std::setprecision(1)
+           << "  Average   : " << std::setw(8) << stats.avg_us    << " us\n"
+           << "  Median    : " << std::setw(8) << stats.median_us << " us\n"
+           << "  StdDev    : " << std::setw(8) << stats.stddev_us << " us\n"
+           << "  Min       : " << std::setw(8) << stats.min_us    << " us\n"
+           << "  Max       : " << std::setw(8) << stats.max_us    << " us\n"
+           << "  Throughput: " << std::setw(8)
+           << (1e6 / stats.avg_us) << " ops/s\n";
+    };
+    report(std::cout);
 
-    /* ── 计时 ── */
-    std::vector<double> times_us;
-    times_us.reserve(ITERS);
-
-    std::cout << "  Benchmarking (" << ITERS << " rounds): " << std::flush;
-    int progress_mark = ITERS / 5;  // 每 20% 打印一个标记
-    if (progress_mark == 0) progress_mark = 1;
-
-    for (int i = 0; i < ITERS; ++i) {
-        auto t0 = Clock::now();
-        Trapdoor td = gen_trap(p, (uint64_t)(i + 1) * 7368787);
-        auto t1 = Clock::now();
-        double us = std::chrono::duration<double, std::micro>(t1 - t0).count();
-        times_us.push_back(us);
-        if ((i + 1) % progress_mark == 0 || i == ITERS - 1)
-            std::cout << " " << (i + 1) << "/" << ITERS << std::flush;
-    }
-    std::cout << " done\n" << std::flush;
-
-    /* ── 统计 ── */
-    double sum_us = std::accumulate(times_us.begin(), times_us.end(), 0.0);
-    double avg_us = sum_us / ITERS;
-    double min_us = *std::min_element(times_us.begin(), times_us.end());
-    double max_us = *std::max_element(times_us.begin(), times_us.end());
-
-    double var_us = 0.0;
-    for (double t : times_us) { double d = t - avg_us; var_us += d * d; }
-    var_us /= (ITERS > 1) ? (ITERS - 1) : 1;
-    double std_us = std::sqrt(var_us);
-
-    /* ── 控制台输出 ── */
-    std::cout << "\n=== Benchmark: GenTrap (MP12 Algorithm 1) ===\n"
-              << "  Parameters: n=" << p.n << ", q=" << p.q
-              << ", b=" << p.b << ", k=" << p.k
-              << ", m=" << p.m << ", σ=" << p.sigma << "\n"
-              << "  Warmup rounds : " << WARMUP << "\n"
-              << "  Timed  rounds : " << ITERS << "\n\n"
-              << std::fixed << std::setprecision(1)
-              << "  Average   : " << std::setw(8) << avg_us << " µs\n"
-              << "  Min       : " << std::setw(8) << min_us << " µs\n"
-              << "  Max       : " << std::setw(8) << max_us << " µs\n"
-              << "  StdDev    : " << std::setw(8) << std_us << " µs\n"
-              << "  Throughput: " << std::setw(8)
-              << (1e6 / avg_us) << " ops/s\n";
-
-    /* ── 文件输出 ── */
-    {
-        std::ostringstream oss;
-        oss << "\n=== Benchmark: GenTrap (MP12 Algorithm 1) ===\n"
-            << "  Parameters: n=" << p.n << ", q=" << p.q
-            << ", b=" << p.b << ", k=" << p.k
-            << ", m=" << p.m << ", σ=" << p.sigma << "\n"
-            << "  Warmup rounds : " << WARMUP << "\n"
-            << "  Timed  rounds : " << ITERS << "\n\n"
-            << std::fixed << std::setprecision(1)
-            << "  Average   : " << std::setw(8) << avg_us << " µs\n"
-            << "  Min       : " << std::setw(8) << min_us << " µs\n"
-            << "  Max       : " << std::setw(8) << max_us << " µs\n"
-            << "  StdDev    : " << std::setw(8) << std_us << " µs\n"
-            << "  Throughput: " << std::setw(8)
-            << (1e6 / avg_us) << " ops/s\n";
-        bench_write(oss.str());
-    }
+    std::ostringstream oss;
+    report(oss);
+    bench_write(oss.str());
 }
 
 void run_mp12_trap_tests(const Params& p) {

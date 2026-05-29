@@ -79,6 +79,13 @@ run-ibags-L1-v:   build-L1   ; @echo ">>> Running IBAGS  (L1, verbose)"    && bu
 run-ibags-L3-v:   build-L3   ; @echo ">>> Running IBAGS  (L3, verbose)"    && build_L3/test_ibags_all
 run-ibags-L5-v:   build-L5   ; @echo ">>> Running IBAGS  (L5, verbose)"    && build_L5/test_ibags_all
 
+# ── Bench: IBAGS ──────────────────────────────────────────────────
+.PHONY: bench-ibags-demo bench-ibags-L1 bench-ibags-L3 bench-ibags-L5
+bench-ibags-demo: build-demo ; @echo ">>> Benchmarking IBAGS (Demo)" && build_demo/bench_ibags
+bench-ibags-L1:   build-L1   ; @echo ">>> Benchmarking IBAGS (L1)"   && build_L1/bench_ibags
+bench-ibags-L3:   build-L3   ; @echo ">>> Benchmarking IBAGS (L3)"   && build_L3/bench_ibags
+bench-ibags-L5:   build-L5   ; @echo ">>> Benchmarking IBAGS (L5)"   && build_L5/bench_ibags
+
 # ── Log targets (终端 + 日志文件同时输出, auto --no-decrypt) ────
 .PHONY: log-demo log-L1 log-L3 log-L5
 log-demo: build-demo

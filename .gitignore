@@ -1,8 +1,8 @@
 build*/
-CMakeFiles/
-*.log
-logs/
 benchmarking_output/
-bendmarking_output/
+CMakeFiles/
+
+logs/
+*.log
 .vscode/settings.json
 .kilo/

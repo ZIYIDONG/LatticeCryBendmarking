@@ -1,21 +1,8 @@
-#include "bench_utils_plain-LWE.h"
-#include <fstream>
-#include <iostream>
+#include "bench_utils.h"
 #include <chrono>
 #include <algorithm>
 #include <numeric>
 #include <cmath>
-
-void bench_write(const std::string& content) {
-    constexpr const char* OUT_PATH = "benchmarking_output/benchmarking_plain-LWE.txt";
-    std::ofstream fout(OUT_PATH, std::ios::app);
-    if (fout.is_open()) {
-        fout << content;
-        fout.close();
-    } else {
-        std::cerr << "  [WARN] Could not open " << OUT_PATH << " for writing\n";
-    }
-}
 
 BenchStats run_benchmark(const std::function<void()>& func,
                           int total_iters, int warmup) {
