@@ -6,6 +6,10 @@
  * 构建：在项目根目录执行
  *   mkdir -p build && cd build && cmake .. -DCMAKE_BUILD_TYPE=Release && cmake --build .
  *
+ * 运行:
+ *   build_<level>/LatticeCryBenchmarking               # 完整运行
+ *   build_<level>/LatticeCryBenchmarking --no-decrypt   # 跳过解密（L1 加速）
+ *
  * @author Ziyi Dong, 2026
  */
 
@@ -18,8 +22,23 @@
 #include <fstream>
 #include <chrono>
 #include <iomanip>
+#include <cstring>
+#include <filesystem>
 
-int main() {
+int main(int argc, char** argv) {
+    // ── 可跳过解密/基准测试（L1 下极慢）──
+    bool skip_decrypt = false;
+    for (int i = 1; i < argc; ++i) {
+        if (std::strcmp(argv[i], "--no-decrypt") == 0)
+            skip_decrypt = true;
+    }
+
+    // ── 确保输出目录存在（避免后续 append 时 WARN）──
+    {
+        std::error_code ec;
+        std::filesystem::create_directories("bendmarking_output", ec);
+    }
+
     // ── 计时起点 ──
     auto t_start = std::chrono::high_resolution_clock::now();
 
@@ -44,7 +63,7 @@ int main() {
 
     // ── 将参数写入基准测试输出文件 ──
     {
-        constexpr const char* OUT_PATH = "../bendmarking_output/bendmarking_plain-LWE.txt";
+        constexpr const char* OUT_PATH = "bendmarking_output/bendmarking_plain-LWE.txt";
         std::ofstream fout(OUT_PATH, std::ios::out);
         if (fout.is_open()) {
             fout << "\n==========================================================\n"
@@ -78,9 +97,15 @@ int main() {
     run_bench_matops();
     run_test_expand();
     run_test_eval();
-    run_test_decrypt();
+
+    if (!skip_decrypt) {
+        run_test_decrypt();
+        run_bench_decrypt();
+    } else {
+        std::cout << "\n--- Skipping decrypt & bench_decrypt (--no-decrypt) ---\n\n";
+    }
+
     run_test_security();
-    run_bench_decrypt();
 
     // ── 总耗时 ──
     auto t_end = std::chrono::high_resolution_clock::now();
@@ -93,7 +118,7 @@ int main() {
 
     /* 写入文件 */
     {
-        constexpr const char* OUT_PATH = "../bendmarking_output/bendmarking_plain-LWE.txt";
+        constexpr const char* OUT_PATH = "bendmarking_output/bendmarking_plain-LWE.txt";
         std::ofstream fout(OUT_PATH, std::ios::app);
         if (fout.is_open()) {
             fout << "\n----------------------------------------------------------\n"

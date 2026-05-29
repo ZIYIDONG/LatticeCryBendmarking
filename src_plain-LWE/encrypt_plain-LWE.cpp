@@ -27,7 +27,7 @@ using namespace unienc;
 /* ───── 文件输出 ───── */
 static std::ostringstream enc_oss;
 static void write_to_bench_file() {
-    constexpr const char* OUT_PATH = "../bendmarking_output/bendmarking_plain-LWE.txt";
+    constexpr const char* OUT_PATH = "bendmarking_output/bendmarking_plain-LWE.txt";
     std::ofstream fout(OUT_PATH, std::ios::app);
     if (fout.is_open()) { fout << enc_oss.str(); fout.close(); }
 }

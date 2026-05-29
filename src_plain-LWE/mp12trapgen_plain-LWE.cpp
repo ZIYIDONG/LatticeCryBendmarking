@@ -216,13 +216,20 @@ void bench_gen_trap(const Params& p) {
     constexpr int ITERS   = 20;
 
     /* ── 预热 ── */
+    std::cout << "  Warming up (" << WARMUP << " rounds)..." << std::flush;
     for (int i = 0; i < WARMUP; ++i) {
         (void)gen_trap(p, (uint64_t)(i + 1) * 999983);
+        std::cout << "." << std::flush;
     }
+    std::cout << " done\n" << std::flush;
 
     /* ── 计时 ── */
     std::vector<double> times_us;
     times_us.reserve(ITERS);
+
+    std::cout << "  Benchmarking (" << ITERS << " rounds): " << std::flush;
+    int progress_mark = ITERS / 5;  // 每 20% 打印一个标记
+    if (progress_mark == 0) progress_mark = 1;
 
     for (int i = 0; i < ITERS; ++i) {
         auto t0 = Clock::now();
@@ -230,7 +237,10 @@ void bench_gen_trap(const Params& p) {
         auto t1 = Clock::now();
         double us = std::chrono::duration<double, std::micro>(t1 - t0).count();
         times_us.push_back(us);
+        if ((i + 1) % progress_mark == 0 || i == ITERS - 1)
+            std::cout << " " << (i + 1) << "/" << ITERS << std::flush;
     }
+    std::cout << " done\n" << std::flush;
 
     /* ── 统计 ── */
     double sum_us = std::accumulate(times_us.begin(), times_us.end(), 0.0);
@@ -259,7 +269,7 @@ void bench_gen_trap(const Params& p) {
               << (1e6 / avg_us) << " ops/s\n";
 
     /* ── 文件输出 ── */
-    constexpr const char* OUT_PATH = "../bendmarking_output/bendmarking_plain-LWE.txt";
+    constexpr const char* OUT_PATH = "bendmarking_output/bendmarking_plain-LWE.txt";
     std::ofstream fout(OUT_PATH, std::ios::app);
     if (fout.is_open()) {
         fout << "\n=== Benchmark: GenTrap (MP12 Algorithm 1) ===\n"

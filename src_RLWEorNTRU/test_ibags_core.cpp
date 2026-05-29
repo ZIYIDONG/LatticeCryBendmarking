@@ -16,6 +16,7 @@
 #include "../include_RLWEorNTRU/errors.h"
 #include "../include_RLWEorNTRU/params.h"
 #include "../include_RLWEorNTRU/secure_memory.h"
+#include "../include_RLWEorNTRU/test_colors.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -31,23 +32,29 @@ using namespace ibags;
 // Test helpers (与 test_ibags_poly.cpp 风格一致)
 // ============================================================================
 
+extern bool g_ibags_quiet;
+extern bool g_ibags_nocolor;
+
 static int tests_passed = 0;
 static int tests_failed = 0;
 
+// 颜色辅助宏
+#define C(suffix) (g_ibags_nocolor ? "" : COLOR_##suffix)
+
 #define TEST(name) \
     do { \
-        printf("  TEST: %s ... ", name); \
+        if (!g_ibags_quiet) printf("  TEST: %s ... ", name); \
     } while (0)
 
 #define PASS() \
     do { \
-        printf("PASSED\n"); \
+        if (!g_ibags_quiet) printf("%sPASSED%s\n", C(GREEN), COLOR_RESET); \
         ++tests_passed; \
     } while (0)
 
 #define FAIL(msg) \
     do { \
-        printf("FAILED: %s\n", msg); \
+        printf("%sFAILED%s: %s\n", C(RED), COLOR_RESET, msg); \
         ++tests_failed; \
     } while (0)
 
@@ -141,7 +148,7 @@ static Params level5_params;
 static void init_params() {
     demo_params    = Params::params_demo_64();
     level2_params  = Params::params_level2_512();
-    level3_params  = Params::params_level3_768();
+    level3_params  = Params::params_level3_1024();
     level5_params  = Params::params_level5_1024();
 }
 
@@ -282,11 +289,11 @@ void test_params_level2_512() {
     PASS();
 }
 
-void test_params_level3_768() {
-    TEST("Level3 params 768");
+void test_params_level3_1024() {
+    TEST("Level3 params 1024");
     CHECK_EQ(static_cast<int>(level3_params.param_id),
-             static_cast<int>(ParamId::IBAGS_768_LEVEL3), "param_id mismatch");
-    CHECK_EQ(level3_params.n, 768, "n mismatch");
+             static_cast<int>(ParamId::IBAGS_1024_LEVEL3), "param_id mismatch");
+    CHECK_EQ(level3_params.n, 1024, "n mismatch");
     CHECK_GT(level3_params.q, 0, "q should be > 0");
     PASS();
 }
@@ -304,7 +311,7 @@ void test_params_param_id_name() {
     TEST("ParamId name");
     CHECK_STREQ(param_id_name(ParamId::IBAGS_64_DEMO),     "IBAGS-64-Demo",    "name mismatch");
     CHECK_STREQ(param_id_name(ParamId::IBAGS_512_LEVEL2),  "IBAGS-512-Level2", "name mismatch");
-    CHECK_STREQ(param_id_name(ParamId::IBAGS_768_LEVEL3),  "IBAGS-768-Level3", "name mismatch");
+    CHECK_STREQ(param_id_name(ParamId::IBAGS_1024_LEVEL3), "IBAGS-1024-Level3","name mismatch");
     CHECK_STREQ(param_id_name(ParamId::IBAGS_1024_LEVEL5), "IBAGS-1024-Level5","name mismatch");
     CHECK_STREQ(param_id_name(static_cast<ParamId>(0xFFFF)), "IBAGS-Unknown",   "unknown name mismatch");
     PASS();
@@ -542,7 +549,7 @@ void test_secure_zero_null_no_crash() {
 
     uint8_t buf[4];
     secure_zero(buf, 0);
-    printf("PASSED (no crash)\n");
+    if (!g_ibags_quiet) printf("%sPASSED%s (no crash)\n", C(GREEN), COLOR_RESET);
     ++tests_passed;
 }
 
@@ -671,7 +678,7 @@ void test_secret_buffer_destructor_zeroes() {
     delete sb;
 
     // Address is freed — verify with valgrind/ASan
-    printf("PASSED (verify with valgrind/ASan)\n");
+    if (!g_ibags_quiet) printf("%sPASSED%s (verify with valgrind/ASan)\n", C(GREEN), COLOR_RESET);
     ++tests_passed;
 }
 
@@ -699,7 +706,7 @@ void test_secure_wipe_clears_on_scope() {
     {
         SecureWipe wipe(buf, sizeof(buf));
     }
-    printf("PASSED (verify with valgrind/ASan)\n");
+    if (!g_ibags_quiet) printf("%sPASSED%s (verify with valgrind/ASan)\n", C(GREEN), COLOR_RESET);
     ++tests_passed;
 }
 
@@ -833,7 +840,7 @@ void test_secret_poly_destructor_zeroes() {
 
     delete poly;
 
-    printf("PASSED (verify with valgrind/ASan)\n");
+    if (!g_ibags_quiet) printf("%sPASSED%s (verify with valgrind/ASan)\n", C(GREEN), COLOR_RESET);
     ++tests_passed;
 }
 
@@ -854,10 +861,10 @@ void test_integration_validate_with_status_propagation() {
 }
 
 // ============================================================================
-// main
+// Unified runner entry — callable from test_ibags_all.cpp
 // ============================================================================
 
-int main() {
+int run_ibags_core_tests() {
     init_params();
 
     printf("===== Running IBAGS Core Tests =====\n\n");
@@ -877,7 +884,7 @@ int main() {
     printf("\n--- §2 Params: Factory ---\n");
     test_params_demo_64();
     test_params_level2_512();
-    test_params_level3_768();
+    test_params_level3_1024();
     test_params_level5_1024();
     test_params_param_id_name();
 
@@ -944,10 +951,5 @@ int main() {
     printf("  Failed:  %d\n", tests_failed);
     printf("========================================\n");
 
-    if (tests_failed > 0) {
-        printf("\n*** SOME TESTS FAILED ***\n");
-        return EXIT_FAILURE;
-    }
-    printf("\nAll tests passed.\n");
-    return EXIT_SUCCESS;
+    return (tests_failed == 0) ? 0 : 1;
 }

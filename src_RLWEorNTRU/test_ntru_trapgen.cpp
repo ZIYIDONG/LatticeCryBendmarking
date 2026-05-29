@@ -24,41 +24,49 @@
 #include <string>
 #include <vector>
 
+#include "../include_RLWEorNTRU/test_colors.h"
+
+extern bool g_ibags_quiet;
+extern bool g_ibags_nocolor;
+
 // ── 简单断言宏 ──
 static int g_passed = 0;
 static int g_failed = 0;
 
+// 颜色辅助
+#define C(suffix) (g_ibags_nocolor ? "" : COLOR_##suffix)
+
 #define TEST(name) std::cout << "\n=== " << name << " ===\n"
 #define CHECK(cond, msg) do {                           \
     if (!(cond)) {                                       \
-        std::cerr << "  FAIL: " << msg << std::endl;      \
+        std::cerr << C(RED) << "  FAIL: " << msg << COLOR_RESET << std::endl; \
         ++g_failed;                                      \
     } else {                                             \
-        std::cout << "  PASS: " << msg << std::endl;     \
+        if (!g_ibags_quiet) std::cout << C(GREEN) << "  PASS: " << msg << COLOR_RESET << std::endl; \
         ++g_passed;                                      \
     }                                                    \
 } while(0)
 
 #define CHECK_OK(status, msg) do {                       \
     if (!(status).ok()) {                                 \
-        std::cerr << "  FAIL: " << msg                    \
+        std::cerr << C(RED) << "  FAIL: " << msg          \
                   << " — " << (status).message()          \
-                  << std::endl;                          \
+                  << COLOR_RESET << std::endl;            \
         ++g_failed;                                      \
     } else {                                             \
-        std::cout << "  PASS: " << msg << std::endl;     \
+        if (!g_ibags_quiet) std::cout << C(GREEN) << "  PASS: " << msg << COLOR_RESET << std::endl; \
         ++g_passed;                                      \
     }                                                    \
 } while(0)
 
 #define CHECK_FAIL(status, msg) do {                     \
     if ((status).ok()) {                                  \
-        std::cerr << "  FAIL: " << msg                    \
+        std::cerr << C(RED) << "  FAIL: " << msg          \
                   << " — expected error but got Ok"       \
-                  << std::endl;                          \
+                  << COLOR_RESET << std::endl;            \
         ++g_failed;                                      \
     } else {                                             \
-        std::cout << "  PASS: " << msg << std::endl;     \
+        if (!g_ibags_quiet) std::cout << C(GREEN) << "  PASS: " << msg << COLOR_RESET << std::endl; \
         ++g_passed;                                      \
     }                                                    \
 } while(0)
@@ -322,9 +330,10 @@ void test_sample_f_max_attempts_boundary() {
 }
 
 // ============================================================================
-// main
+// Unified runner entry — callable from test_ibags_all.cpp
 // ============================================================================
-int main() {
+
+int run_ntru_trapgen_tests() {
     std::cout << "============================================\n"
               << " test_ntru_trapgen — NTRU TrapGen Unit Tests\n"
               << "============================================\n";

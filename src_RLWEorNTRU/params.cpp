@@ -31,7 +31,7 @@ const char* param_id_name(ParamId id) noexcept {
     switch (id) {
         case ParamId::IBAGS_64_DEMO:     return "IBAGS-64-Demo";
         case ParamId::IBAGS_512_LEVEL2:  return "IBAGS-512-Level2";
-        case ParamId::IBAGS_768_LEVEL3:  return "IBAGS-768-Level3";
+        case ParamId::IBAGS_1024_LEVEL3: return "IBAGS-1024-Level3";
         case ParamId::IBAGS_1024_LEVEL5: return "IBAGS-1024-Level5";
         default:                          return "IBAGS-Unknown";
     }
@@ -46,7 +46,7 @@ Params default_params() {
 #if defined(LATTICE_LEVEL_5)
     return Params::params_level5_1024();
 #elif defined(LATTICE_LEVEL_3)
-    return Params::params_level3_768();
+    return Params::params_level3_1024();
 #elif defined(LATTICE_LEVEL_1)
     return Params::params_level2_512();
 #else  // default (Demo): n=64
@@ -88,11 +88,11 @@ Params Params::params_level2_512() {
     return p;
 }
 
-Params Params::params_level3_768() {
+Params Params::params_level3_1024() {
     Params p;
-    p.param_id            = ParamId::IBAGS_768_LEVEL3;
-    p.n                   = 768;
-    p.q                   = 16777259;        // 25-bit NTT-friendly prime (≡ 1 mod 1536)
+    p.param_id            = ParamId::IBAGS_1024_LEVEL3;
+    p.n                   = 1024;
+    p.q                   = 16777259;        // 25-bit
     p.sigma               = 1.0;
     p.eta1                = 55;
     p.eta2                = 28;

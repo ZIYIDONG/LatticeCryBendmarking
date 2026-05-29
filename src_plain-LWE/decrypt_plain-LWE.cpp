@@ -32,7 +32,7 @@ using namespace matops;
 static std::ostringstream dec_oss;
 
 static void write_to_bench_file() {
-    constexpr const char* OUT_PATH = "../bendmarking_output/bendmarking_plain-LWE.txt";
+    constexpr const char* OUT_PATH = "bendmarking_output/bendmarking_plain-LWE.txt";
     std::ofstream fout(OUT_PATH, std::ios::app);
     if (fout.is_open()) {
         fout << dec_oss.str();
@@ -293,11 +293,12 @@ void run_test_decrypt(int argc, char** argv) {
               << (keys_ok ? "✓ 通过" : "✗ 失败") << "\n\n";
 
     /* ─── 构造 LWE 矩阵 A ─── */
+    std::cout << "[LWE] 正在构造 A ∈ Z_q^{" << params.R << " × " << params.M << "} ... " << std::flush;
     Mat A = generate_lwe_matrix(t_master, params.R, params.M, q, B_chi, rng);
-    std::cout << "[LWE] A ∈ Z_q^{" << params.R << " × " << params.M << "} 已生成\n";
+    std::cout << "完成\n" << std::flush;
+    std::cout << "[验证] ‖t · A‖_∞ ≤ " << B_chi << " ... " << std::flush;
     bool lwe_ok = verify_lwe(t_master, A, q, B_chi);
-    std::cout << "[验证] ‖t · A‖_∞ ≤ " << B_chi << "  ... "
-              << (lwe_ok ? "✓ 通过" : "✗ 失败") << "\n\n";
+    std::cout << (lwe_ok ? "✓ 通过" : "✗ 失败") << "\n\n";
 
     /* ─── 构造 gadget G ─── */
     Mat G = build_gadget(params.R, q, b);
@@ -311,12 +312,15 @@ void run_test_decrypt(int argc, char** argv) {
         std::cout << "  加密明文 μ = " << mu_test << "\n";
         std::cout << "──────────────────────────────────────────\n";
 
-        /* GSW 加密 */
+        /* GSW 加密 (L1 下极慢) */
+        std::cout << "  [Enc] 正在加密 ... " << std::flush;
         Mat C = gsw_encrypt(A, G, mu_test, q, rng);
+        std::cout << "完成\n" << std::flush;
         std::cout << "  [Enc] C = A·S + " << mu_test << "·G  ∈ Z_q^{"
                   << params.R << " × " << params.M << "}\n";
 
-        /* 验证单密钥解密正确性: t · C · G⁻¹(ŵ^T) ≈ μ · ⌈q/2⌉ */
+        /* 验证单密钥解密正确性 */
+        std::cout << "  [单密钥验证] 正在计算 ... " << std::flush;
         Vec w_hat = build_w_hat(params.R, q);
         Mat w_col(params.R, Vec(1));
         for (int i = 0; i < params.R; ++i) w_col[i][0] = w_hat[i];
@@ -328,7 +332,8 @@ void run_test_decrypt(int argc, char** argv) {
         long single_dec = vec_dot_mod(tC, u, q);
         long single_centered = center_mod(single_dec, q);
         long expected = mu_test * ((q + 1) / 2);
-        std::cout << "  [单密钥验证] t·C·G⁻¹(ŵ^T) = " << single_dec
+        std::cout << "完成\n" << std::flush;
+        std::cout << "  [结果] t·C·G⁻¹(ŵ^T) = " << single_dec
                   << " (中心化: " << single_centered << ")"
                   << ", 期望 ≈ " << (mu_test ? (long)((q + 1) / 2) : 0L) << "\n";
 
@@ -368,6 +373,11 @@ void run_test_decrypt(int argc, char** argv) {
     std::cout << "──────────────────────────────────────────\n";
 
     int random_trials = 50;
+    /* L1 大参数下自动降级: 每轮需做 gsw_encrypt (A·S 乘) + decrypt_with_trace (N×向量矩阵乘) */
+    if (params.R > 500) {
+        random_trials = 2;
+        std::cout << "  [加速] R=" << params.R << " > 500, 随机测试降至 " << random_trials << " 轮\n";
+    }
     unsigned long long provided_seed = 0;
     std::string hist_path;
     if (argc > 1) {
@@ -398,7 +408,9 @@ void run_test_decrypt(int argc, char** argv) {
     long long sum_abs_p = 0;
     long long max_abs_p = 0;
 
+    std::cout << "  " << random_trials << " 轮随机测试: " << std::flush;
     for (int trial = 0; trial < random_trials; ++trial) {
+        std::cout << "." << std::flush;
         int mu_trial = trial % 2;
 
         /* 每轮重新生成共享密钥 */
@@ -428,6 +440,7 @@ void run_test_decrypt(int argc, char** argv) {
     std::cout << "  " << random_trials << " 轮中通过: " << extra_pass << " / " << random_trials << "\n";
     std::cout << "  p (|centered|) mean = " << mean_abs_p << ", max = " << max_abs_p << "\n\n";
 
+    std::cout << " 完成\n" << std::flush;
     if (hist_file.is_open()) hist_file.close();
 
     /* ─── 总结 ─── */

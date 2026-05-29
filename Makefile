@@ -1,83 +1,175 @@
-# LatticeCryBenchmarking — Top-level build dispatcher
+# LatticeCryBenchmarking — Top-level build & test dispatcher
 #
-# LWE variants in structural-richness order:
-#   plain  (no structure, matrix ops, slowest)  →  module  (block circulant, balanced)  →  ring  (full algebraic, fastest)
+# Submodules:
+#   plain-LWE   Matrix-based LWE  (MP12 trapdoors, GSW eval, FHE decrypt, benchmarks)
+#   ibags       Ring-based RLWE/NTRU  (IBAGS protocols, NTT, trapgen, unit tests)
 #
 # Usage:
-#   make plain-demo        Plain-LWE  demo  (n=64)   → build_plain-demo/
-#   make plain-Level-1     Plain-LWE  L1   (n=512)   → build_plain-Level-1/
-#   make plain-Level-3     Plain-LWE  L3   (n=768)   → build_plain-Level-3/
-#   make plain-Level-5     Plain-LWE  L5   (n=1024)  → build_plain-Level-5/
-#   make module-demo       Module-LWE demo           → build_module-demo/
-#   make module-Level-1    Module-LWE L1             → build_module-Level-1/
-#   make module-Level-3    Module-LWE L3             → build_module-Level-3/
-#   make module-Level-5    Module-LWE L5             → build_module-Level-5/
-#   make ring-demo         Ring-LWE   demo           → build_ring-demo/
-#   make ring-Level-1      Ring-LWE   L1             → build_ring-Level-1/
-#   make ring-Level-3      Ring-LWE   L3             → build_ring-Level-3/
-#   make ring-Level-5      Ring-LWE   L5             → build_ring-Level-5/
+#   make build-L1           Build both submodules with NIST Level 1 params
+#   make build-demo         Build both submodules with Demo params
+#   make build-L3           Build both submodules with NIST Level 3
+#   make build-L5           Build both submodules with NIST Level 5
 #
-#   make all-demo          Build all three with demo params
-#   make all-Level-1       Build all three with NIST Level 1
-#   make all-Level-3       Build all three with NIST Level 3
-#   make all-Level-5       Build all three with NIST Level 5
-#   make clean             Remove all build directories
+#   make run-plain-L1       Run Plain-LWE  (L1, --no-decrypt for speed)
+#   make run-plain-L1-full  Run Plain-LWE  (L1, full including decrypt)
+#   make run-ibags-L1       Run IBAGS test (L1, quiet mode)
+#   make run-ibags-L1-v     Run IBAGS test (L1, verbose mode)
+#
+#   make all-L1             Build + Run both  (L1, skip decrypt)
+#   make all-demo           Build + Run both  (Demo)
+#
+#   make log-L1             Build + Run both → logs/L1-<ts>/  (auto skip decrypt)
+#
+#   make clean              Remove all build directories
+#   make clean-logs         Remove all log directories
+#   make help
 
-CMAKE  := cmake
-BUILD  := cmake --build
-JOBS   := $(shell nproc 2>/dev/null || echo 4)
+CMAKE    := cmake
+BUILD    := cmake --build
+JOBS     := $(shell nproc 2>/dev/null || echo 4)
+LOGS_DIR := logs
+TIMESTAMP := $(shell date +%Y%m%d-%H%M%S)
 
-define build_variant
-	@echo ">>> Building $(1)-LWE ($(2)) -> build_$(1)-$(2)/"
-	$(CMAKE) -B build_$(1)-$(2) -DCMAKE_BUILD_TYPE=Release $(3)
-	$(BUILD) build_$(1)-$(2) -j $(JOBS)
-	@echo ">>> Done: build_$(1)-$(2)/LatticeCryBenchmarking"
+# ── Internal: cmake configure + build (uses single build dir per level) ──
+define build_all
+	@echo "============================================================"
+	@echo "  Building LatticeCryBenchmarking (level=$(1))"
+	@echo "  Targets: LatticeCryBenchmarking + test_ibags_all"
+	@echo "============================================================"
+	$(CMAKE) -B build_$(1) -DCMAKE_BUILD_TYPE=Release $(2)
+	@echo ""
+	$(BUILD) build_$(1) -j $(JOBS)
+	@echo ""
+	@echo "  Binaries:"
+	@echo "    build_$(1)/LatticeCryBenchmarking  (plain-LWE)"
+	@echo "    build_$(1)/test_ibags_all           (IBAGS)"
+	@echo "============================================================"
 endef
 
-# ── Plain-LWE ────────────────────────────────────────────
-.PHONY: plain-demo plain-Level-1 plain-Level-3 plain-Level-5
-plain-demo:   ; $(call build_variant,plain,demo,)
-plain-Level-1:; $(call build_variant,plain,Level-1,-DSECURITY_LEVEL=1)
-plain-Level-3:; $(call build_variant,plain,Level-3,-DSECURITY_LEVEL=3)
-plain-Level-5:; $(call build_variant,plain,Level-5,-DSECURITY_LEVEL=5)
+# ── Build targets ──────────────────────────────────────────────────
+.PHONY: build-demo build-L1 build-L3 build-L5
+build-demo: ; $(call build_all,demo,)
+build-L1:   ; $(call build_all,L1,-DSECURITY_LEVEL=1)
+build-L3:   ; $(call build_all,L3,-DSECURITY_LEVEL=3)
+build-L5:   ; $(call build_all,L5,-DSECURITY_LEVEL=5)
 
-# ── Module-LWE (placeholder) ─────────────────────────────
-.PHONY: module-demo module-Level-1 module-Level-3 module-Level-5
-module-demo:    ; $(call build_variant,module,demo,)
-module-Level-1: ; $(call build_variant,module,Level-1,-DSECURITY_LEVEL=1)
-module-Level-3: ; $(call build_variant,module,Level-3,-DSECURITY_LEVEL=3)
-module-Level-5: ; $(call build_variant,module,Level-5,-DSECURITY_LEVEL=5)
+# ── Run: Plain-LWE (default: skip decrypt for speed; use *-full for all) ─
+.PHONY: run-plain-demo run-plain-L1 run-plain-L3 run-plain-L5
+run-plain-demo: build-demo ; @echo ">>> Running Plain-LWE (Demo)"  && build_demo/LatticeCryBenchmarking
+run-plain-L1:   build-L1   ; @echo ">>> Running Plain-LWE (L1, --no-decrypt)"  && build_L1/LatticeCryBenchmarking --no-decrypt
+run-plain-L3:   build-L3   ; @echo ">>> Running Plain-LWE (L3, --no-decrypt)"  && build_L3/LatticeCryBenchmarking --no-decrypt
+run-plain-L5:   build-L5   ; @echo ">>> Running Plain-LWE (L5, --no-decrypt)"  && build_L5/LatticeCryBenchmarking --no-decrypt
 
-# ── Ring-LWE (placeholder) ───────────────────────────────
-.PHONY: ring-demo ring-Level-1 ring-Level-3 ring-Level-5
-ring-demo:    ; $(call build_variant,ring,demo,)
-ring-Level-1: ; $(call build_variant,ring,Level-1,-DSECURITY_LEVEL=1)
-ring-Level-3: ; $(call build_variant,ring,Level-3,-DSECURITY_LEVEL=3)
-ring-Level-5: ; $(call build_variant,ring,Level-5,-DSECURITY_LEVEL=5)
+.PHONY: run-plain-demo-full run-plain-L1-full run-plain-L3-full run-plain-L5-full
+run-plain-demo-full: build-demo ; @echo ">>> Running Plain-LWE (Demo, full)"  && build_demo/LatticeCryBenchmarking
+run-plain-L1-full:   build-L1   ; @echo ">>> Running Plain-LWE (L1, full)"    && build_L1/LatticeCryBenchmarking
+run-plain-L3-full:   build-L3   ; @echo ">>> Running Plain-LWE (L3, full)"    && build_L3/LatticeCryBenchmarking
+run-plain-L5-full:   build-L5   ; @echo ">>> Running Plain-LWE (L5, full)"    && build_L5/LatticeCryBenchmarking
 
-# ── Aggregate targets ────────────────────────────────────
-.PHONY: all-demo all-Level-1 all-Level-3 all-Level-5
-all-demo:    plain-demo    module-demo    ring-demo
-all-Level-1: plain-Level-1 module-Level-1 ring-Level-1
-all-Level-3: plain-Level-3 module-Level-3 ring-Level-3
-all-Level-5: plain-Level-5 module-Level-5 ring-Level-5
+# ── Run: IBAGS (quiet by default, add -v for verbose) ────────────
+.PHONY: run-ibags-demo run-ibags-L1 run-ibags-L3 run-ibags-L5
+run-ibags-demo: build-demo ; @echo ">>> Running IBAGS  (Demo)"    && build_demo/test_ibags_all -q
+run-ibags-L1:   build-L1   ; @echo ">>> Running IBAGS  (L1)"      && build_L1/test_ibags_all -q
+run-ibags-L3:   build-L3   ; @echo ">>> Running IBAGS  (L3)"      && build_L3/test_ibags_all -q
+run-ibags-L5:   build-L5   ; @echo ">>> Running IBAGS  (L5)"      && build_L5/test_ibags_all -q
 
-# ── Clean ────────────────────────────────────────────────
+.PHONY: run-ibags-demo-v run-ibags-L1-v run-ibags-L3-v run-ibags-L5-v
+run-ibags-demo-v: build-demo ; @echo ">>> Running IBAGS  (Demo, verbose)"  && build_demo/test_ibags_all
+run-ibags-L1-v:   build-L1   ; @echo ">>> Running IBAGS  (L1, verbose)"    && build_L1/test_ibags_all
+run-ibags-L3-v:   build-L3   ; @echo ">>> Running IBAGS  (L3, verbose)"    && build_L3/test_ibags_all
+run-ibags-L5-v:   build-L5   ; @echo ">>> Running IBAGS  (L5, verbose)"    && build_L5/test_ibags_all
+
+# ── Log targets (终端 + 日志文件同时输出, auto --no-decrypt) ────
+.PHONY: log-demo log-L1 log-L3 log-L5
+log-demo: build-demo
+	@mkdir -p $(LOGS_DIR)/demo-$(TIMESTAMP)
+	@echo ">>> Running Plain-LWE (Demo)  ->  $(LOGS_DIR)/demo-$(TIMESTAMP)/plain-LWE.log"
+	@build_demo/LatticeCryBenchmarking 2>&1 | tee $(LOGS_DIR)/demo-$(TIMESTAMP)/plain-LWE.log
+	@echo ">>> Running IBAGS  (Demo)     ->  $(LOGS_DIR)/demo-$(TIMESTAMP)/ibags.log"
+	@build_demo/test_ibags_all -q 2>&1 | tee $(LOGS_DIR)/demo-$(TIMESTAMP)/ibags.log
+	@echo ""
+	@echo ">>> Logs saved in $(LOGS_DIR)/demo-$(TIMESTAMP)/"
+
+log-L1: build-L1
+	@mkdir -p $(LOGS_DIR)/L1-$(TIMESTAMP)
+	@echo ">>> Running Plain-LWE (L1, --no-decrypt)  ->  $(LOGS_DIR)/L1-$(TIMESTAMP)/plain-LWE.log"
+	@build_L1/LatticeCryBenchmarking --no-decrypt 2>&1 | tee $(LOGS_DIR)/L1-$(TIMESTAMP)/plain-LWE.log
+	@echo ">>> Running IBAGS  (L1)     ->  $(LOGS_DIR)/L1-$(TIMESTAMP)/ibags.log"
+	@build_L1/test_ibags_all -q 2>&1 | tee $(LOGS_DIR)/L1-$(TIMESTAMP)/ibags.log
+	@echo ""
+	@echo ">>> Logs saved in $(LOGS_DIR)/L1-$(TIMESTAMP)/"
+
+log-L3: build-L3
+	@mkdir -p $(LOGS_DIR)/L3-$(TIMESTAMP)
+	@echo ">>> Running Plain-LWE (L3, --no-decrypt)  ->  $(LOGS_DIR)/L3-$(TIMESTAMP)/plain-LWE.log"
+	@build_L3/LatticeCryBenchmarking --no-decrypt 2>&1 | tee $(LOGS_DIR)/L3-$(TIMESTAMP)/plain-LWE.log
+	@echo ">>> Running IBAGS  (L3)     ->  $(LOGS_DIR)/L3-$(TIMESTAMP)/ibags.log"
+	@build_L3/test_ibags_all -q 2>&1 | tee $(LOGS_DIR)/L3-$(TIMESTAMP)/ibags.log
+	@echo ""
+	@echo ">>> Logs saved in $(LOGS_DIR)/L3-$(TIMESTAMP)/"
+
+log-L5: build-L5
+	@mkdir -p $(LOGS_DIR)/L5-$(TIMESTAMP)
+	@echo ">>> Running Plain-LWE (L5, --no-decrypt)  ->  $(LOGS_DIR)/L5-$(TIMESTAMP)/plain-LWE.log"
+	@build_L5/LatticeCryBenchmarking --no-decrypt 2>&1 | tee $(LOGS_DIR)/L5-$(TIMESTAMP)/plain-LWE.log
+	@echo ">>> Running IBAGS  (L5)     ->  $(LOGS_DIR)/L5-$(TIMESTAMP)/ibags.log"
+	@build_L5/test_ibags_all -q 2>&1 | tee $(LOGS_DIR)/L5-$(TIMESTAMP)/ibags.log
+	@echo ""
+	@echo ">>> Logs saved in $(LOGS_DIR)/L5-$(TIMESTAMP)/"
+
+# ── Aggregate targets ──────────────────────────────────────────────
+.PHONY: all-demo all-L1 all-L3 all-L5
+all-demo: run-plain-demo run-ibags-demo
+all-L1:   run-plain-L1   run-ibags-L1
+all-L3:   run-plain-L3   run-ibags-L3
+all-L5:   run-plain-L5   run-ibags-L5
+
+# ── Clean ──────────────────────────────────────────────────────────
 .PHONY: clean
 clean:
-	rm -rf build_plain-* build_module-* build_ring-*
+	rm -rf build_demo build_L1 build_L3 build_L5 build_plain-* build_module-* build_ring-*
 	@echo ">>> All build directories removed"
 
-# ── Help ─────────────────────────────────────────────────
+.PHONY: clean-logs
+clean-logs:
+	rm -rf $(LOGS_DIR)
+	@echo ">>> All log directories removed"
+
+# ── Help ───────────────────────────────────────────────────────────
 .PHONY: help
 help:
-	@echo "LatticeCryBenchmarking — Build Targets (plain → module → ring)"
+	@echo "LatticeCryBenchmarking — Two Submodules"
 	@echo ""
-	@echo "  make plain-demo         Plain-LWE  Demo      (n=64,  q=8191, ~40-bit)"
-	@echo "  make plain-Level-1      Plain-LWE  NIST L1   (n=512, q~2^27,~128-bit)"
-	@echo "  make plain-Level-3      Plain-LWE  NIST L3   (n=768, q~2^32,~192-bit)"
-	@echo "  make plain-Level-5      Plain-LWE  NIST L5   (n=1024,q~2^32,~256-bit)"
-	@echo "  make module-*           Module-LWE (future)"
-	@echo "  make ring-*             Ring-LWE   (future)"
-	@echo "  make all-*              Build all three variants"
-	@echo "  make clean              Remove all build directories"
+	@echo "┌─ Build ───────────────────────────────────────────────┐"
+	@echo "│ make build-demo     Demo params  (n=64,   ~40-bit)    │"
+	@echo "│ make build-L1       NIST L1      (n=512,  ~128-bit)   │"
+	@echo "│ make build-L3       NIST L3      (n=768,  ~192-bit)   │"
+	@echo "│ make build-L5       NIST L5      (n=1024, ~256-bit)   │"
+	@echo "├─ Run: Plain-LWE ──────────────────────────────────────┤"
+	@echo "│ make run-plain-L1       Quick  (--no-decrypt)         │"
+	@echo "│ make run-plain-L1-full  Full   (includes slow decrypt) │"
+	@echo "│ make run-plain-demo     Demo params                   │"
+	@echo "├─ Run: IBAGS ──────────────────────────────────────────┤"
+	@echo "│ make run-ibags-L1       Quiet mode (~50 lines)        │"
+	@echo "│ make run-ibags-L1-v     Verbose mode                  │"
+	@echo "├─ All-in-one ──────────────────────────────────────────┤"
+	@echo "│ make all-L1             Build + Run both (L1, quick)  │"
+	@echo "│ make all-demo           Build + Run both (Demo)       │"
+	@echo "├─ Log file output ─────────────────────────────────────┤"
+	@echo "│ make log-L1             Run both -> logs/L1-<ts>/     │"
+	@echo "│ make log-demo           Run both -> logs/demo-<ts>/   │"
+	@echo "├─ Utilities ───────────────────────────────────────────┤"
+	@echo "│ make clean              Remove all build directories  │"
+	@echo "│ make clean-logs         Remove all log directories    │"
+	@echo "│ make help               Show this help                │"
+	@echo "└───────────────────────────────────────────────────────┘"
+	@echo ""
+	@echo "Binaries per level (single build directory):"
+	@echo "  build_L1/LatticeCryBenchmarking   build_L1/test_ibags_all"
+	@echo ""
+	@echo "Log files per level (timestamped):"
+	@echo "  logs/L1-YYYYMMDD-HHMMSS/plain-LWE.log"
+	@echo "  logs/L1-YYYYMMDD-HHMMSS/ibags.log"
+	@echo ""
+	@echo "Decrypt skip: L1+ params auto-use --no-decrypt to avoid"
+	@echo "  hours-long O(n^3) matrix ops. Use *-full targets for full run."

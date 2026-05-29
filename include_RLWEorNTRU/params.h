@@ -39,8 +39,8 @@ enum class ParamId : uint16_t {
     /// NIST Level 2: n=512, q=8404993 (24-bit), 对标 Dilithium2
     IBAGS_512_LEVEL2   = 0x0200,
 
-    /// NIST Level 3: n=768, q=16777259 (25-bit), 对标 Dilithium3
-    IBAGS_768_LEVEL3   = 0x0300,
+    /// NIST Level 3: n=1024, q=16777259 (25-bit), 对标 Dilithium3
+    IBAGS_1024_LEVEL3  = 0x0300,
 
     /// NIST Level 5: n=1024, q=4206593 (23-bit), 对标 Dilithium5 / Falcon-1024
     IBAGS_1024_LEVEL5  = 0x0500,
@@ -103,12 +103,13 @@ struct Params {
     [[nodiscard]] static Params params_level2_512();
 
     /**
-     * @brief 工厂: NIST Level 3 — n=768 参数集
+     * @brief 工厂: NIST Level 3 — n=1024 参数集
      *
-     * q = 16777259 (25 位, NTT-friendly: 16777259 ≡ 1 mod 1536)
+     * q = 16777259 (25 位)
      * 经典安全 ≈ 192-bit，对标 Dilithium3
+     * 通过较小的噪声/挑战参数区分于 Level 5 (n=1024)
      */
-    [[nodiscard]] static Params params_level3_768();
+    [[nodiscard]] static Params params_level3_1024();
 
     /**
      * @brief 工厂: NIST Level 5 — n=1024 参数集

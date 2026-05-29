@@ -74,29 +74,16 @@ find_package(OpenSSL REQUIRED)
 target_link_libraries(ibags_core PUBLIC OpenSSL::Crypto)
 
 # ============================================================================
-# IBAGS 单元测试 (全部 standalone, 无 GTest)
+# IBAGS 统一测试入口 (串联 core / poly / ntru_trapgen)
 # ============================================================================
 
-# 测试: errors, params & secure_memory (no-GTest, standalone)
-add_executable(test_ibags_core
+# 统一测试: 三个套件合并为单一可执行文件
+add_executable(test_ibags_all
+    src_RLWEorNTRU/test_ibags_all.cpp
     src_RLWEorNTRU/test_ibags_core.cpp
-)
-target_include_directories(test_ibags_core PRIVATE ${INC_RLWEOR_NTRU_DIR})
-target_compile_options(test_ibags_core PRIVATE -Wall -Wextra)
-target_link_libraries(test_ibags_core PRIVATE ibags_core)
-
-# 测试: poly & NTT (no-GTest, standalone)
-add_executable(test_ibags_poly
     src_RLWEorNTRU/test_ibags_poly.cpp
-)
-target_include_directories(test_ibags_poly PRIVATE ${INC_RLWEOR_NTRU_DIR})
-target_compile_options(test_ibags_poly PRIVATE -Wall -Wextra)
-target_link_libraries(test_ibags_poly PRIVATE ibags_core)
-
-# 测试: ntru_trapgen (no-GTest, standalone)
-add_executable(test_ntru_trapgen
     src_RLWEorNTRU/test_ntru_trapgen.cpp
 )
-target_include_directories(test_ntru_trapgen PRIVATE ${INC_RLWEOR_NTRU_DIR})
-target_compile_options(test_ntru_trapgen PRIVATE -Wall -Wextra)
-target_link_libraries(test_ntru_trapgen PRIVATE ibags_core)
+target_include_directories(test_ibags_all PRIVATE ${INC_RLWEOR_NTRU_DIR})
+target_compile_options(test_ibags_all PRIVATE -Wall -Wextra)
+target_link_libraries(test_ibags_all PRIVATE ibags_core)
