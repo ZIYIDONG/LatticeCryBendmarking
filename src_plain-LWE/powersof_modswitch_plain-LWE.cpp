@@ -1,5 +1,5 @@
-#include "../include_plain-LWE/powersof_modswitch_plain-LWE.h"
-#include "../include_plain-LWE/unienc_plain-LWE.h"
+#include "powersof_modswitch_plain-LWE.h"
+#include "unienc_plain-LWE.h"
 #include <iostream>
 #include <iomanip>
 #include <random>
@@ -11,6 +11,7 @@
 #include <fstream>
 #include <sstream>
 #include "unified_params_plain-LWE.h"
+#include "bench_utils_plain-LWE.h"
 
 using namespace cryptolib;
 
@@ -106,7 +107,7 @@ void run_test_powersof_modswitch() {
     /*    <BitDecomp(c̄), sk_id> ≈ (p/q)·<c̄, s̄>  (mod p)        */
     std::cout << "\n--- Test 4: 模数切换下的近似对偶恒等式 ---\n";
     {
-        auto __u_p = unified::default_mp12_params(); long p = 17, q = __u_p.q;       // use unified default q for tests
+        auto u_p = unified::default_mp12_params(); long p = 17, q = u_p.q;       // use unified default q for tests
         int m = 8;
         int k_q = compute_k(q, 2);
         int k_p = compute_k(p, 2);
@@ -211,21 +212,6 @@ void run_test_powersof_modswitch() {
 }
 
 /* ───────────────────────────────────────────────────
-   文件输出辅助
-   ─────────────────────────────────────────────────── */
-static void write_to_bench_file(const std::string& content) {
-    constexpr const char* OUT_PATH = "bendmarking_output/bendmarking_plain-LWE.txt";
-    std::ofstream fout(OUT_PATH, std::ios::app);
-    if (fout.is_open()) {
-        fout << content;
-        fout.close();
-        std::cout << "  [Results written to " << OUT_PATH << "]\n";
-    } else {
-        std::cerr << "  [WARN] Could not open " << OUT_PATH << " for writing\n";
-    }
-}
-
-/* ───────────────────────────────────────────────────
    Benchmark: Powersof2 with modulus switch 纯耗时
    ─────────────────────────────────────────────────── */
 static void bench_powersof_modswitch() {
@@ -233,8 +219,8 @@ static void bench_powersof_modswitch() {
     constexpr int WARMUP  = 3;
     constexpr int ITERS   = 20;
 
-    auto __u_p = unified::default_mp12_params();
-    long q = __u_p.q;
+    auto u_p = unified::default_mp12_params();
+    long q = u_p.q;
     long p = 17;
     int  m = 8;
 
@@ -283,5 +269,5 @@ static void bench_powersof_modswitch() {
 
     std::cout << "\n--- Benchmark: Powersof2 ModSwitch ---\n";
     std::cout << oss.str();
-    write_to_bench_file(oss.str());
+    bench_write(oss.str());
 }

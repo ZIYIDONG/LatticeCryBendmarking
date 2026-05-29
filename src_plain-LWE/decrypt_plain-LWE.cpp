@@ -10,8 +10,7 @@
  *   ⑥ 执行 FinDec, 恢复明文 μ
  *   ⑦ 验证解密结果的正确性
  *
- * 编译:
- *   g++ -std=c++17 -O2 -Wall -I. test_decrypt.cpp -o test_decrypt
+ * 编译: 由顶层 CMakeLists.txt 管理，通过 make 构建
  */
 
 #include "matops_plain-LWE.h"
@@ -29,164 +28,11 @@
 using namespace matops;
 
 /* ───── 文件输出辅助 ───── */
+#include "bench_utils_plain-LWE.h"
 static std::ostringstream dec_oss;
 
-static void write_to_bench_file() {
-    constexpr const char* OUT_PATH = "bendmarking_output/bendmarking_plain-LWE.txt";
-    std::ofstream fout(OUT_PATH, std::ios::app);
-    if (fout.is_open()) {
-        fout << dec_oss.str();
-        fout.close();
-        std::cout << "  [Results written to " << OUT_PATH << "]\n";
-    }
-}
 using namespace cryptolib;
-
-/* ═══════════════════════════════════════════════════════════
-   §1  辅助: 构造满足 LWE 结构的公共矩阵 A
-   ═══════════════════════════════════════════════════════════ */
-/**
- * 生成 A ∈ Z_q^{R × M}, 使得对给定的秘密 t ∈ Z_q^R,
- * t · A 的每个分量都是小误差(≤ B)
- *
- * 构造方法:
- *   A 的前 (R-1) 行 ← U(Z_q)
- *   第 R-1 行 = (-(Σ_{i<R-1} t_i · A_i) + e) / t[R-1]  mod q
- *   其中 t[R-1] 取为与 q 互素的值 (默认 = 1)
- *
- * 这保证 t · A = e (小向量)
- */
-static Mat generate_lwe_matrix(const Vec& t, int R, int M, long q,
-                                int noise_bound, std::mt19937_64& rng)
-{
-    std::uniform_int_distribution<long> unif(0, q - 1);
-    std::uniform_int_distribution<long> noise(-noise_bound, noise_bound);
-
-    Mat A = make_mat(R, M);
-
-    /* 前 R-1 行: 均匀随机 */
-    for (int i = 0; i < R - 1; ++i)
-        for (int j = 0; j < M; ++j)
-            A[i][j] = unif(rng);
-
-    /* 第 R-1 行: 使 t·A 的每个分量 = e_j (小噪声) */
-    /* t[R-1] 应为 1 (或与 q 互素) */
-    assert(t[R - 1] == 1 && "需要 t[R-1] = 1 以简化 LWE 构造");
-
-    for (int j = 0; j < M; ++j) {
-        long inner = 0;
-        for (int i = 0; i < R - 1; ++i)
-            inner = mod_pos(inner + t[i] * A[i][j], q);
-        long e_j = noise(rng);
-        /* t·A_col_j = inner + t[R-1]·A[R-1][j] = e_j */
-        /* A[R-1][j] = (e_j - inner) / t[R-1] = e_j - inner  (因为 t[R-1]=1) */
-        A[R - 1][j] = mod_pos(e_j - inner, q);
-    }
-
-    return A;
-}
-
-/* ═══════════════════════════════════════════════════════════
-   §2  辅助: 构造 GSW 密文 C = A·S + μ·G
-   ═══════════════════════════════════════════════════════════ */
-/**
- * 标准 GSW 加密:
- *   S ← {0,1}^{M × M}         (短随机矩阵)
- *   C = A·S + μ·G  ∈ Z_q^{R × M}
- *
- * 解密正确性:
- *   t·C = t·A·S + μ·t·G
- *       ≈ (小误差)·S + μ·t·G
- *   t·C·G⁻¹(ŵ^T) ≈ μ·t·ŵ^T = μ·t[R-1]·⌈q/2⌉ ≈ μ·⌈q/2⌉
- */
-static Mat gsw_encrypt(const Mat& A, const Mat& G, int mu,
-                        long q, std::mt19937_64& rng)
-{
-    int R = (int)A.size();
-    int M = (int)A[0].size();
-
-    /* S ← {0,1}^{M × M} */
-    std::uniform_int_distribution<int> bit(0, 1);
-    Mat S = make_mat(M, M);
-    for (int i = 0; i < M; ++i)
-        for (int j = 0; j < M; ++j)
-            S[i][j] = bit(rng);
-
-    /* A · S  mod q */
-    Mat AS = mat_mul(A, S, q);
-
-    /* μ · G */
-    Mat muG = make_mat(R, M, 0);
-    if (mu != 0) {
-        for (int i = 0; i < R; ++i)
-            for (int j = 0; j < M; ++j)
-                muG[i][j] = mod_pos((long)mu * G[i][j], q);
-    }
-
-    /* C = AS + μG  mod q */
-    Mat C = mat_add(AS, muG, q);
-    return C;
-}
-
-/* ═══════════════════════════════════════════════════════════
-   §3  辅助: 构造简化的扩展密文 (对角块 = C, 其余 = 0)
-   ═══════════════════════════════════════════════════════════ */
-/**
- * 简化的 expand: Ĉ_{a,a} = C (对角), Ĉ_{a,b} = 0 (非对角)
- *
- * 这对应 expand.h 中 i 行的非对角块为 0 的特例,
- * 适用于所有身份共享同一密文的基本场景.
- *
- * 维度: (N·R) × (N·M)
- */
-static Mat simple_expand(const Mat& C, int N_id) {
-    int R = (int)C.size();
-    int M = (int)C[0].size();
-    Mat C_hat(N_id * R, Vec(N_id * M, 0));
-
-    for (int a = 0; a < N_id; ++a)
-        for (int r = 0; r < R; ++r)
-            for (int c = 0; c < M; ++c)
-                C_hat[a * R + r][a * M + c] = C[r][c];
-
-    return C_hat;
-}
-
-/* ═══════════════════════════════════════════════════════════
-   §4  辅助: 生成加法秘密共享的私钥
-   ═══════════════════════════════════════════════════════════ */
-/**
- * 生成 N 个私钥 t_0, …, t_{N-1}, 满足 Σ t_i ≡ t_master (mod q)
- *
- * 策略:
- *   t_0, …, t_{N-2} ← 随机
- *   t_{N-1} = t_master - Σ_{i<N-1} t_i   (mod q)
- *
- * 要求: t_master[R-1] = 1, 从而 Σ t_i[R-1] ≡ 1 (mod q)
- */
-static std::vector<Vec> generate_shared_keys(const Vec& t_master,
-                                              int N_id, long q,
-                                              std::mt19937_64& rng)
-{
-    int R = (int)t_master.size();
-    std::uniform_int_distribution<long> unif(0, q - 1);
-    std::vector<Vec> keys(N_id, Vec(R, 0));
-
-    /* 前 N-1 个: 随机 */
-    for (int i = 0; i < N_id - 1; ++i)
-        for (int j = 0; j < R; ++j)
-            keys[i][j] = unif(rng);
-
-    /* 最后一个: 补齐使和 = t_master */
-    for (int j = 0; j < R; ++j) {
-        long partial_sum = 0;
-        for (int i = 0; i < N_id - 1; ++i)
-            partial_sum = mod_pos(partial_sum + keys[i][j], q);
-        keys[N_id - 1][j] = mod_pos(t_master[j] - partial_sum, q);
-    }
-
-    return keys;
-}
+#include "lwe_test_helpers_plain-LWE.h"
 
 /* ═══════════════════════════════════════════════════════════
    §5  验证函数
@@ -230,7 +76,7 @@ static bool verify_lwe(const Vec& t, const Mat& A, long q, int bound) {
 /* ═══════════════════════════════════════════════════════════
    §6  主测试
    ═══════════════════════════════════════════════════════════ */
-void run_test_decrypt(int argc, char** argv) {
+void run_test_decrypt() {
     std::cout << "==========================================================\n";
     std::cout << "  多身份全同态加密 — 阈值解密测试 (GSW 类型)\n";
     std::cout << "  使用: matops.h, eval.h (gadget_inverse, build_gadget)\n";
@@ -373,20 +219,8 @@ void run_test_decrypt(int argc, char** argv) {
     std::cout << "──────────────────────────────────────────\n";
 
     int random_trials = 50;
-    /* L1 大参数下自动降级: 每轮需做 gsw_encrypt (A·S 乘) + decrypt_with_trace (N×向量矩阵乘) */
-    if (params.R > 500) {
-        random_trials = 2;
-        std::cout << "  [加速] R=" << params.R << " > 500, 随机测试降至 " << random_trials << " 轮\n";
-    }
-    unsigned long long provided_seed = 0;
     std::string hist_path;
-    if (argc > 1) {
-        try { random_trials = std::stoi(argv[1]); } catch(...) { random_trials = 50; }
-    }
-    if (argc > 2) {
-        try { provided_seed = std::stoull(argv[2]); } catch(...) { provided_seed = 0; }
-    }
-    if (argc > 3) hist_path = argv[3];
+    unsigned long long provided_seed = 0;
 
     std::cout << "  多轮随机测试 (" << random_trials << " 轮)\n";
     std::cout << "──────────────────────────────────────────\n";
@@ -459,14 +293,8 @@ void run_test_decrypt(int argc, char** argv) {
             << "  Result: " << (passed_tests == total_tests ? "ALL PASS" : "SOME FAIL") << "\n"
             << "  p (|centered|) mean = " << std::fixed << std::setprecision(0) << mean_abs_p
             << ", max = " << max_abs_p << "\n";
-    write_to_bench_file();
+    bench_write(dec_oss.str());
 
 }
 
-// No-arg wrapper for consolidated runner
-void run_test_decrypt() {
-    int argc = 1;
-    char* argv[] = {(char*)"test_decrypt", nullptr};
-    run_test_decrypt(argc, argv);
-}
 

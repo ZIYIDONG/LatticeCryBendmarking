@@ -1,6 +1,6 @@
-#include "../include_plain-LWE/eval_plain-LWE.h"
-#include "../include_plain-LWE/matops_plain-LWE.h"
-#include "../include_plain-LWE/unified_params_plain-LWE.h"
+#include "eval_plain-LWE.h"
+#include "matops_plain-LWE.h"
+#include "unified_params_plain-LWE.h"
 #include <iostream>
 #include <iomanip>
 #include <random>
@@ -8,6 +8,7 @@
 #include <numeric>
 #include <fstream>
 #include <sstream>
+#include "bench_utils_plain-LWE.h"
 
 using namespace cryptolib;
 using matops::Mat;
@@ -135,22 +136,7 @@ void run_test_eval() {
     std::cout << "\nDone.\n";
 }
 
-/* ───────────────────────────────────────────────────
-   文件输出辅助
-   ─────────────────────────────────────────────────── */
-static void write_to_bench_file(const std::string& content) {
-    constexpr const char* OUT_PATH = "bendmarking_output/bendmarking_plain-LWE.txt";
-    std::ofstream fout(OUT_PATH, std::ios::app);
-    if (fout.is_open()) {
-        fout << content;
-        fout.close();
-        std::cout << "  [Results written to " << OUT_PATH << "]\n";
-    } else {
-        std::cerr << "  [WARN] Could not open " << OUT_PATH << " for writing\n";
-    }
-}
-
-/* ───────────────────────────────────────────────────
+/* ────────────────────────────────────────────────────────────────────────────
    Benchmark 1: AddEval 纯耗时
    ─────────────────────────────────────────────────── */
 static void bench_add_eval() {
@@ -212,7 +198,7 @@ static void bench_add_eval() {
         << (1e6 / avg_us) << " ops/s\n";
 
     std::cout << "\n--- Benchmark: AddEval ---\n" << oss.str();
-    write_to_bench_file(oss.str());
+    bench_write(oss.str());
 }
 
 /* ───────────────────────────────────────────────────
@@ -278,5 +264,5 @@ static void bench_mult_eval() {
         << (1e6 / avg_us) << " ops/s\n";
 
     std::cout << "\n--- Benchmark: MultEval ---\n" << oss.str();
-    write_to_bench_file(oss.str());
+    bench_write(oss.str());
 }

@@ -1,7 +1,7 @@
-#include "../include_plain-LWE/extend_plain-LWE.h"
-#include "../include_plain-LWE/expand_plain-LWE.h"
-#include "../include_plain-LWE/matops_plain-LWE.h"
-#include "../include_plain-LWE/unified_params_plain-LWE.h"
+#include "extend_plain-LWE.h"
+#include "expand_plain-LWE.h"
+#include "matops_plain-LWE.h"
+#include "unified_params_plain-LWE.h"
 #include <iostream>
 #include <iomanip>
 #include <random>
@@ -10,6 +10,7 @@
 #include <numeric>
 #include <fstream>
 #include <sstream>
+#include "bench_utils_plain-LWE.h"
 
 using namespace cryptolib;
 using matops::Mat;
@@ -122,22 +123,7 @@ void run_test_expand() {
     std::cout << "\nDone.\n";
 }
 
-/* ───────────────────────────────────────────────────
-   文件输出辅助
-   ─────────────────────────────────────────────────── */
-static void write_to_bench_file(const std::string& content) {
-    constexpr const char* OUT_PATH = "bendmarking_output/bendmarking_plain-LWE.txt";
-    std::ofstream fout(OUT_PATH, std::ios::app);
-    if (fout.is_open()) {
-        fout << content;
-        fout.close();
-        std::cout << "  [Results written to " << OUT_PATH << "]\n";
-    } else {
-        std::cerr << "  [WARN] Could not open " << OUT_PATH << " for writing\n";
-    }
-}
-
-/* ───────────────────────────────────────────────────
+/* ────────────────────────────────────────────────────────────────────────────
    Benchmark 1: Extend (GSW.LComb) 纯耗时
    ─────────────────────────────────────────────────── */
 static void bench_extend() {
@@ -199,7 +185,7 @@ static void bench_extend() {
         << "  Throughput: " << std::setw(8) << (1e6 / avg_us) << " ops/s\n";
 
     std::cout << "\n--- Benchmark: Extend ---\n" << oss.str();
-    write_to_bench_file(oss.str());
+    bench_write(oss.str());
 }
 
 /* ───────────────────────────────────────────────────
@@ -271,6 +257,6 @@ static void bench_expand_full() {
         << "  Throughput: " << std::setw(8) << (1e6 / avg_us) << " ops/s\n";
 
     std::cout << "\n--- Benchmark: Expand ---\n" << oss.str();
-    write_to_bench_file(oss.str());
+    bench_write(oss.str());
 }
 

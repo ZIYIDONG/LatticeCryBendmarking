@@ -7,8 +7,8 @@
  *   ③ Correctness threshold (q/4 vs noise budget)
  */
 
-#include "../include_plain-LWE/mp12_plain-LWE.h"
-#include "../include_plain-LWE/unified_params_plain-LWE.h"
+#include "mp12_plain-LWE.h"
+#include "unified_params_plain-LWE.h"
 #include <iostream>
 #include <iomanip>
 #include <cmath>
@@ -16,22 +16,8 @@
 #include <sstream>
 
 /* ───── 文件输出 ───── */
+#include "bench_utils_plain-LWE.h"
 static std::ostringstream sec_oss;
-static void write_to_bench_file() {
-    constexpr const char* OUT_PATH = "bendmarking_output/bendmarking_plain-LWE.txt";
-    std::ofstream fout(OUT_PATH, std::ios::app);
-    if (fout.is_open()) { fout << sec_oss.str(); fout.close(); }
-}
-
-/* ═══════════════════════════════════════════════════
-   §1  Hermite factor → BKZ block size lookup
-   ═══════════════════════════════════════════════════ */
-static double hermite_factor(int n, double norm, long q) {
-    // Hermite delta^n ≈ ||v|| / q^(n/m)
-    // For SIS we approximate: delta = (norm / q^(n/m))^(1/n)
-    (void)n; (void)norm; (void)q;
-    return 0.0; // placeholder
-}
 
 /* ═══════════════════════════════════════════════════
    §2  SIS hardness estimate
@@ -160,6 +146,6 @@ void run_test_security() {
             << "  ‖x‖=" << noise_bound << " q/4=" << threshold
             << "  margin=" << std::setprecision(1) << (threshold / noise_bound) << "x\n";
 
-    write_to_bench_file();
+    bench_write(sec_oss.str());
     std::cout << "\nDone.\n";
 }

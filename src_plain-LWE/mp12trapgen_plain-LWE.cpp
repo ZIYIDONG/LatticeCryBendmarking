@@ -2,7 +2,7 @@
  * Extracted trapgen-related tests and helpers from main.cpp
  */
 
-#include "../include_plain-LWE/mp12trapgen_plain-LWE.h"
+#include "mp12trapgen_plain-LWE.h"
 #include <iostream>
 #include <iomanip>
 #include <cmath>
@@ -10,6 +10,8 @@
 #include <algorithm>
 #include <numeric>
 #include <fstream>
+#include <sstream>
+#include "bench_utils_plain-LWE.h"
 
 using namespace mp12;
 
@@ -269,26 +271,22 @@ void bench_gen_trap(const Params& p) {
               << (1e6 / avg_us) << " ops/s\n";
 
     /* ── 文件输出 ── */
-    constexpr const char* OUT_PATH = "bendmarking_output/bendmarking_plain-LWE.txt";
-    std::ofstream fout(OUT_PATH, std::ios::app);
-    if (fout.is_open()) {
-        fout << "\n=== Benchmark: GenTrap (MP12 Algorithm 1) ===\n"
-             << "  Parameters: n=" << p.n << ", q=" << p.q
-             << ", b=" << p.b << ", k=" << p.k
-             << ", m=" << p.m << ", σ=" << p.sigma << "\n"
-             << "  Warmup rounds : " << WARMUP << "\n"
-             << "  Timed  rounds : " << ITERS << "\n\n"
-             << std::fixed << std::setprecision(1)
-             << "  Average   : " << std::setw(8) << avg_us << " µs\n"
-             << "  Min       : " << std::setw(8) << min_us << " µs\n"
-             << "  Max       : " << std::setw(8) << max_us << " µs\n"
-             << "  StdDev    : " << std::setw(8) << std_us << " µs\n"
-             << "  Throughput: " << std::setw(8)
-             << (1e6 / avg_us) << " ops/s\n";
-        fout.close();
-        std::cout << "  [Results written to " << OUT_PATH << "]\n";
-    } else {
-        std::cerr << "  [WARN] Could not open " << OUT_PATH << " for writing\n";
+    {
+        std::ostringstream oss;
+        oss << "\n=== Benchmark: GenTrap (MP12 Algorithm 1) ===\n"
+            << "  Parameters: n=" << p.n << ", q=" << p.q
+            << ", b=" << p.b << ", k=" << p.k
+            << ", m=" << p.m << ", σ=" << p.sigma << "\n"
+            << "  Warmup rounds : " << WARMUP << "\n"
+            << "  Timed  rounds : " << ITERS << "\n\n"
+            << std::fixed << std::setprecision(1)
+            << "  Average   : " << std::setw(8) << avg_us << " µs\n"
+            << "  Min       : " << std::setw(8) << min_us << " µs\n"
+            << "  Max       : " << std::setw(8) << max_us << " µs\n"
+            << "  StdDev    : " << std::setw(8) << std_us << " µs\n"
+            << "  Throughput: " << std::setw(8)
+            << (1e6 / avg_us) << " ops/s\n";
+        bench_write(oss.str());
     }
 }
 

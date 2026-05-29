@@ -6,11 +6,11 @@
  *   Test 9:  SampleLeft 扩展矩阵采样
  *   Test 10: SampleRight 右陷门采样
  *
- * 编译：g++ -O2 -std=c++17 -o del_demo main_del.cpp -lm
+ * 编译: 由顶层 CMakeLists.txt 管理，通过 make 构建
  */
 
-#include "../include_plain-LWE/mp12_plain-LWE.h"
-#include "../include_plain-LWE/mp12deltrapgen_plain-LWE.h"
+#include "mp12_plain-LWE.h"
+#include "mp12deltrapgen_plain-LWE.h"
 #include <iostream>
 #include <iomanip>
 #include <cmath>
@@ -19,6 +19,7 @@
 #include <numeric>
 #include <fstream>
 #include <sstream>
+#include "bench_utils_plain-LWE.h"
 
 using namespace mp12;
 
@@ -385,22 +386,7 @@ void test_ibe_simulation(const Params& p) {
 }
 
 /* ───────────────────────────────────────────────────
-   文件输出辅助：将单条 benchmark 结果追加写入文件
-   ─────────────────────────────────────────────────── */
-static void write_to_bench_file(const std::string& content) {
-    constexpr const char* OUT_PATH = "bendmarking_output/bendmarking_plain-LWE.txt";
-    std::ofstream fout(OUT_PATH, std::ios::app);
-    if (fout.is_open()) {
-        fout << content;
-        fout.close();
-        std::cout << "  [Results written to " << OUT_PATH << "]\n";
-    } else {
-        std::cerr << "  [WARN] Could not open " << OUT_PATH << " for writing\n";
-    }
-}
-
-/* ───────────────────────────────────────────────────
-   Benchmark 1: DelTrapGen 纯耗时
+    Benchmark 1: DelTrapGen 纯耗时
    ─────────────────────────────────────────────────── */
 /**
  * bench_del_trap_gen — 纯粹测量 del_trap_gen() 的耗时
@@ -471,7 +457,7 @@ void bench_del_trap_gen(const Params& p) {
         << (1e6 / avg_us) << " ops/s\n";
 
     std::cout << oss.str();
-    write_to_bench_file(oss.str());
+    bench_write(oss.str());
 }
 
 /* ───────────────────────────────────────────────────
@@ -552,7 +538,7 @@ void bench_sample_pre_tagged(const Params& p) {
         << (1e6 / avg_us) << " ops/s\n";
 
     std::cout << oss.str();
-    write_to_bench_file(oss.str());
+    bench_write(oss.str());
 }
 
 /* ════════════════════ main ════════════════════════ */

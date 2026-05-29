@@ -13,7 +13,7 @@
  * 在 HIBE 典型维度下比较各操作的耗时。
  */
 
-#include "../include_plain-LWE/matops_plain-LWE.h"
+#include "matops_plain-LWE.h"
 #include <iostream>
 #include <iomanip>
 #include <chrono>
@@ -22,6 +22,7 @@
 #include <fstream>
 #include <sstream>
 #include "unified_params_plain-LWE.h"
+#include "bench_utils_plain-LWE.h"
 
 using namespace matops;
 using clk = std::chrono::high_resolution_clock;
@@ -41,16 +42,6 @@ double time_ms(int repeats, F&& f) {
 
 static void hr() { std::cout << std::string(72, '-') << "\n"; }
 
-/* ───── 文件输出辅助 ───── */
-static void write_to_bench_file(const std::string& content) {
-    constexpr const char* OUT_PATH = "bendmarking_output/bendmarking_plain-LWE.txt";
-    std::ofstream fout(OUT_PATH, std::ios::app);
-    if (fout.is_open()) {
-        fout << content;
-        fout.close();
-    }
-}
-
 static std::ostringstream bench_oss;  // 全局收集器
 
 /* ════════════════════════════════════════════════════
@@ -58,7 +49,7 @@ static std::ostringstream bench_oss;  // 全局收集器
    ════════════════════════════════════════════════════ */
 void test_correctness() {
     std::cout << "\n========== 正确性测试 ==========\n";
-    auto __u_p = unified::default_mp12_params(); long q = __u_p.q;
+    auto u_p = unified::default_mp12_params(); long q = u_p.q;
 
     Mat A = random_mat(8, 6, q, 1);
     Mat B = random_mat(8, 6, q, 2);
@@ -103,7 +94,7 @@ void simulate_hibe_delegation_step() {
     std::cout << "\n========== HIBE 第 ℓ 层委托步骤 ==========\n";
 
     // HIBE 参数
-    auto __u_p = unified::default_mp12_params(); long q = __u_p.q;
+    auto u_p = unified::default_mp12_params(); long q = u_p.q;
     int  n  = 8;
     int  k  = 14;          // ⌈log_2 q⌉
     int  nk = n * k;       // = 112
@@ -187,8 +178,8 @@ void simulate_hibe_delegation_step() {
     bench_oss << local_oss.str() << "\n";
 
     // 防止编译器优化掉
-    volatile long sink = A_curr[0][0] + target[0][0];
-    (void)sink;
+    long sink = A_curr[0][0] + target[0][0];
+    (void)sink;  // prevent compiler optimization
 }
 
 /* ════════════════════════════════════════════════════
@@ -204,7 +195,7 @@ struct BenchResult {
 
 void run_benchmarks() {
     std::cout << "\n========== 微观基准测试 ==========\n\n";
-    auto __u_p = unified::default_mp12_params(); long q = __u_p.q;
+    auto u_p = unified::default_mp12_params(); long q = u_p.q;
 
     // 测试维度: 模拟 MP12 / HIBE 中常见的矩阵尺寸
     struct Dim { int r, c; const char* name; };
@@ -340,7 +331,7 @@ void run_bench_matops() {
     run_benchmarks();
 
     // 统一写入文件
-    write_to_bench_file(bench_oss.str());
+    bench_write(bench_oss.str());
 
     std::cout << "\nDone.\n";
 }

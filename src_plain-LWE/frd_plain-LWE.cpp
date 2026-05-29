@@ -1,4 +1,5 @@
-#include "../include_plain-LWE/frd_plain-LWE.h"
+#include "frd_plain-LWE.h"
+#include "matops_plain-LWE.h"
 #include <iostream>
 #include <iomanip>
 #include <random>
@@ -7,6 +8,7 @@
 #include <fstream>
 #include <sstream>
 #include "unified_params_plain-LWE.h"
+#include "bench_utils_plain-LWE.h"
 
 using namespace cryptolib;
 
@@ -52,22 +54,12 @@ static int matrix_rank_mod(Mat M, long q) {
     return rank;
 }
 
-/* ───── 矩阵相减 mod q ───── */
-static Mat mat_sub(const Mat& A, const Mat& B, long q) {
-    int r = (int)A.size(), c = (int)A[0].size();
-    Mat R(r, Vec(c, 0));
-    for (int i = 0; i < r; i++)
-        for (int j = 0; j < c; j++)
-            R[i][j] = mod_pos(A[i][j] - B[i][j], q);
-    return R;
-}
-
 /* ───── 判断是否可运行 FRDContext::setup（避免 find_irreducible 溢出）───── */
 static bool can_setup_frd(long q) { return q <= 100000; }
 
 /* ───── Debug: 手动验证 Rabin 不可约性测试 ───── */
 static void debug_irreducible_check() {
-    auto __u_p = unified::default_mp12_params(); long q = __u_p.q;
+    auto u_p = unified::default_mp12_params(); long q = u_p.q;
 
     Vec f1 = {1, 0, 1};
     std::cout << "\n--- Debug: 不可约多项式手动验证 (F_" << q << ") ---\n";
@@ -157,7 +149,7 @@ void run_test_frd() {
     if (!can_setup_frd(unified::default_mp12_params().q)) {
         std::cout << "  Skipped (q too large for find_irreducible).\n";
     } else {
-        auto __u_p = unified::default_mp12_params(); long q = __u_p.q;
+        auto u_p = unified::default_mp12_params(); long q = u_p.q;
         int n = 4;
         auto ctx = FRDContext::setup(n, q, 13);
 
@@ -176,7 +168,7 @@ void run_test_frd() {
 
             Mat H1 = frd_encode(ctx, id1);
             Mat H2 = frd_encode(ctx, id2);
-            Mat D  = mat_sub(H1, H2, q);
+            Mat D  = matops::mat_sub(H1, H2, q);
             int r = matrix_rank_mod(D, q);
             if (r == n) full_rank++;
         }
@@ -190,7 +182,7 @@ void run_test_frd() {
     if (!can_setup_frd(unified::default_mp12_params().q)) {
         std::cout << "  Skipped (q too large for find_irreducible).\n";
     } else {
-        auto __u_p = unified::default_mp12_params(); long q = __u_p.q;
+        auto u_p = unified::default_mp12_params(); long q = u_p.q;
         int n = 5;
         auto ctx = FRDContext::setup(n, q, 99);
         std::mt19937_64 rng(7);
@@ -203,7 +195,7 @@ void run_test_frd() {
             Vec ab(n);
             for (int i = 0; i < n; i++) ab[i] = mod_pos(a[i] - b[i], q);
 
-            Mat lhs = mat_sub(frd_encode(ctx, a), frd_encode(ctx, b), q);
+            Mat lhs = matops::mat_sub(frd_encode(ctx, a), frd_encode(ctx, b), q);
             Mat rhs = frd_encode(ctx, ab);
             bool eq = true;
             for (int i = 0; i < n && eq; i++)
@@ -220,7 +212,7 @@ void run_test_frd() {
     if (!can_setup_frd(unified::default_mp12_params().q)) {
         std::cout << "  Skipped (q too large for find_irreducible).\n";
     } else {
-        auto __u_p = unified::default_mp12_params(); long q = __u_p.q;
+        auto u_p = unified::default_mp12_params(); long q = u_p.q;
         int n = 6;
         auto ctx = FRDContext::setup(n, q, 1);
         Vec zero(n, 0);
@@ -237,7 +229,7 @@ void run_test_frd() {
     if (!can_setup_frd(unified::default_mp12_params().q)) {
         std::cout << "  Skipped (q too large for find_irreducible).\n";
     } else {
-        auto __u_p = unified::default_mp12_params(); long q = __u_p.q;
+        auto u_p = unified::default_mp12_params(); long q = u_p.q;
         int n = 5;
         auto ctx = FRDContext::setup(n, q, 5);
         Vec e0(n, 0); e0[0] = 1;
@@ -257,7 +249,7 @@ void run_test_frd() {
     if (!can_setup_frd(unified::default_mp12_params().q)) {
         std::cout << "  Skipped (q too large for find_irreducible).\n";
     } else {
-        auto __u_p = unified::default_mp12_params(); long q = __u_p.q;
+        auto u_p = unified::default_mp12_params(); long q = u_p.q;
         int n = 8;
         auto ctx = FRDContext::setup(n, q, 11);
         std::mt19937_64 rng(0);
@@ -285,31 +277,16 @@ void run_test_frd() {
     std::cout << "\nDone.\n";
 }
 
-/* ───────────────────────────────────────────────────
-   文件输出辅助
-   ─────────────────────────────────────────────────── */
-static void write_to_bench_file(const std::string& content) {
-    constexpr const char* OUT_PATH = "bendmarking_output/bendmarking_plain-LWE.txt";
-    std::ofstream fout(OUT_PATH, std::ios::app);
-    if (fout.is_open()) {
-        fout << content;
-        fout.close();
-        std::cout << "  [Results written to " << OUT_PATH << "]\n";
-    } else {
-        std::cerr << "  [WARN] Could not open " << OUT_PATH << " for writing\n";
-    }
-}
-
-/* ───────────────────────────────────────────────────
+/* ────────────────────────────────────────────────────────────────────────────
    Benchmark: FRD 编码 纯耗时
-   ─────────────────────────────────────────────────── */
+   ─────────────────────────────────────────────────────────────────────────── */
 void bench_frd_encode() {
     using Clock = std::chrono::high_resolution_clock;
     constexpr int WARMUP  = 3;
     constexpr int ITERS   = 20;
 
-    auto __u_p = unified::default_mp12_params();
-    long q = __u_p.q;
+    auto u_p = unified::default_mp12_params();
+    long q = u_p.q;
     int  n = 8;
 
     if (!can_setup_frd(q)) {
@@ -363,5 +340,5 @@ void bench_frd_encode() {
 
     std::cout << "\n--- Benchmark: FRD Encode ---\n";
     std::cout << oss.str();
-    write_to_bench_file(oss.str());
+    bench_write(oss.str());
 }

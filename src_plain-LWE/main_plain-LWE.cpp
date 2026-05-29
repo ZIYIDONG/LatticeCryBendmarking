@@ -13,10 +13,10 @@
  * @author Ziyi Dong, 2026
  */
 
-#include "../include_plain-LWE/mp12_plain-LWE.h"
-#include "../include_plain-LWE/mp12deltrapgen_plain-LWE.h"
-#include "../include_plain-LWE/mp12trapgen_plain-LWE.h"
-#include "../include_plain-LWE/unified_params_plain-LWE.h"
+#include "mp12_plain-LWE.h"
+#include "mp12deltrapgen_plain-LWE.h"
+#include "mp12trapgen_plain-LWE.h"
+#include "unified_params_plain-LWE.h"
 
 #include <iostream>
 #include <fstream>
@@ -36,7 +36,7 @@ int main(int argc, char** argv) {
     // ── 确保输出目录存在（避免后续 append 时 WARN）──
     {
         std::error_code ec;
-        std::filesystem::create_directories("bendmarking_output", ec);
+        std::filesystem::create_directories("benchmarking_output", ec);
     }
 
     // ── 计时起点 ──
@@ -63,7 +63,7 @@ int main(int argc, char** argv) {
 
     // ── 将参数写入基准测试输出文件 ──
     {
-        constexpr const char* OUT_PATH = "bendmarking_output/bendmarking_plain-LWE.txt";
+        constexpr const char* OUT_PATH = "benchmarking_output/benchmarking_plain-LWE.txt";
         std::ofstream fout(OUT_PATH, std::ios::out);
         if (fout.is_open()) {
             fout << "\n==========================================================\n"
@@ -118,7 +118,7 @@ int main(int argc, char** argv) {
 
     /* 写入文件 */
     {
-        constexpr const char* OUT_PATH = "bendmarking_output/bendmarking_plain-LWE.txt";
+        constexpr const char* OUT_PATH = "benchmarking_output/benchmarking_plain-LWE.txt";
         std::ofstream fout(OUT_PATH, std::ios::app);
         if (fout.is_open()) {
             fout << "\n----------------------------------------------------------\n"

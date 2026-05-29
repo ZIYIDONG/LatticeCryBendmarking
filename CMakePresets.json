@@ -4,7 +4,7 @@
     {
       "name": "debug",
       "displayName": "Debug",
-      "binaryDir": "${sourceDir}/build",
+      "binaryDir": "${sourceDir}/build_debug",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "SECURITY_LEVEL": "1"
@@ -13,7 +13,7 @@
     {
       "name": "release",
       "displayName": "Release",
-      "binaryDir": "${sourceDir}/build",
+      "binaryDir": "${sourceDir}/build_release",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
         "SECURITY_LEVEL": "1"
@@ -22,7 +22,7 @@
     {
       "name": "demo",
       "displayName": "Demo",
-      "binaryDir": "${sourceDir}/build",
+      "binaryDir": "${sourceDir}/build_demo",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug"
       }

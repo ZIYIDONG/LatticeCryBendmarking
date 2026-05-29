@@ -7,8 +7,7 @@
  *   ② 占 PartDec 总时间的百分比
  *   ③ 随参数 (n, N_id, q) 变化的缩放趋势
  *
- * 编译:
- *   g++ -std=c++17 -O2 -Wall -I. bench_decrypt.cpp -o bench_decrypt
+ * 编译: 由顶层 CMakeLists.txt 管理，通过 make 构建
  */
 
 #include "matops_plain-LWE.h"
@@ -33,17 +32,8 @@ using namespace matops;
 using namespace cryptolib;
 
 /* ───── 文件输出辅助 ───── */
+#include "bench_utils_plain-LWE.h"
 static std::ostringstream bdec_oss;
-
-static void write_to_bench_file() {
-    constexpr const char* OUT_PATH = "bendmarking_output/bendmarking_plain-LWE.txt";
-    std::ofstream fout(OUT_PATH, std::ios::app);
-    if (fout.is_open()) {
-        fout << bdec_oss.str();
-        fout.close();
-        std::cout << "  [Results written to " << OUT_PATH << "]\n";
-    }
-}
 
 /* ══════════════════════════════════════════════════
    计时工具
@@ -79,72 +69,7 @@ static TimingResult bench(std::function<void()> func, int repeats) {
     return { sum, avg, std::sqrt(var), repeats };
 }
 
-/* ══════════════════════════════════════════════════
-   LWE 矩阵 / GSW 密文生成 (同 test_decrypt.cpp)
-   ══════════════════════════════════════════════════ */
-static Mat generate_lwe_matrix(const Vec& t, int R, int M, long q,
-                                int noise_bound, std::mt19937_64& rng)
-{
-    std::uniform_int_distribution<long> unif(0, q - 1);
-    std::uniform_int_distribution<long> noise(-noise_bound, noise_bound);
-    Mat A = make_mat(R, M);
-    for (int i = 0; i < R - 1; ++i)
-        for (int j = 0; j < M; ++j)
-            A[i][j] = unif(rng);
-    for (int j = 0; j < M; ++j) {
-        long inner = 0;
-        for (int i = 0; i < R - 1; ++i)
-            inner = mod_pos(inner + t[i] * A[i][j], q);
-        A[R - 1][j] = mod_pos(noise(rng) - inner, q);
-    }
-    return A;
-}
-
-static Mat gsw_encrypt(const Mat& A, const Mat& G, int mu,
-                        long q, std::mt19937_64& rng)
-{
-    int R = (int)A.size(), M = (int)A[0].size();
-    std::uniform_int_distribution<int> bit(0, 1);
-    Mat S = make_mat(M, M);
-    for (int i = 0; i < M; ++i)
-        for (int j = 0; j < M; ++j)
-            S[i][j] = bit(rng);
-    Mat AS = mat_mul(A, S, q);
-    Mat muG = make_mat(R, M, 0);
-    if (mu) for (int i = 0; i < R; ++i)
-                for (int j = 0; j < M; ++j)
-                    muG[i][j] = mod_pos((long)mu * G[i][j], q);
-    return mat_add(AS, muG, q);
-}
-
-static Mat simple_expand(const Mat& C, int N_id) {
-    int R = (int)C.size(), M = (int)C[0].size();
-    Mat Ch(N_id * R, Vec(N_id * M, 0));
-    for (int a = 0; a < N_id; ++a)
-        for (int r = 0; r < R; ++r)
-            for (int c = 0; c < M; ++c)
-                Ch[a * R + r][a * M + c] = C[r][c];
-    return Ch;
-}
-
-static std::vector<Vec> generate_shared_keys(const Vec& t_master,
-                                              int N_id, long q,
-                                              std::mt19937_64& rng)
-{
-    int R = (int)t_master.size();
-    std::uniform_int_distribution<long> unif(0, q - 1);
-    std::vector<Vec> keys(N_id, Vec(R, 0));
-    for (int i = 0; i < N_id - 1; ++i)
-        for (int j = 0; j < R; ++j)
-            keys[i][j] = unif(rng);
-    for (int j = 0; j < R; ++j) {
-        long s = 0;
-        for (int i = 0; i < N_id - 1; ++i)
-            s = mod_pos(s + keys[i][j], q);
-        keys[N_id - 1][j] = mod_pos(t_master[j] - s, q);
-    }
-    return keys;
-}
+#include "lwe_test_helpers_plain-LWE.h"
 /* ══════════════════════════════════════════════════
    格式化打印工具 + 文件输出
    ══════════════════════════════════════════════════ */
@@ -643,6 +568,6 @@ void run_bench_decrypt()
     /* 缩放趋势对比 */
     scaling_test();
 
-    write_to_bench_file();
+    bench_write(bdec_oss.str());
 }
 

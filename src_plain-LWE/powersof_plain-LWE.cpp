@@ -1,4 +1,4 @@
-#include "../include_plain-LWE/powersof_plain-LWE.h"
+#include "powersof_plain-LWE.h"
 #include <iostream>
 #include <iomanip>
 #include <random>
@@ -7,6 +7,7 @@
 #include <fstream>
 #include <sstream>
 #include "unified_params_plain-LWE.h"
+#include "bench_utils_plain-LWE.h"
 
 using namespace cryptolib;
 
@@ -28,7 +29,7 @@ void run_test_powersof() {
     /* ───── Test 1: 标量 Powersof2,小例子 ───── */
     std::cout << "\n--- Test 1: Powersof2 标量 (q=17, b=2) ---\n";
     {
-        auto __u_p = unified::default_mp12_params(); long q = __u_p.q;
+        auto u_p = unified::default_mp12_params(); long q = u_p.q;
         int b = 2;
         int k = compute_k(q, b);
         std::cout << "q=" << q << "  b=" << b << "  k=" << k << "\n";
@@ -41,7 +42,7 @@ void run_test_powersof() {
 
     /* ───── Test 2: 标量 Powers-of-3 ───── */
     {
-        auto __u_p = unified::default_mp12_params(); long q = __u_p.q;
+        auto u_p = unified::default_mp12_params(); long q = u_p.q;
         int b = 3;
         Vec p = powers_of_b_scalar(5, b, q);
         std::cout << "\n--- Test 2: Powersof3 标量 (q=" << q << ", b=3) ---\n";
@@ -53,7 +54,7 @@ void run_test_powersof() {
     /* ───── Test 3: BitDecomp 是 Powersof 的逆向操作 ───── */
     std::cout << "\n--- Test 3: BitDecomp 重构原值 ---\n";
     {
-        auto __u_p = unified::default_mp12_params(); long q = __u_p.q;
+        auto u_p = unified::default_mp12_params(); long q = u_p.q;
         int b = 2;
         int k = compute_k(q, b);
         std::cout << "q=" << q << "  k=" << k << "\n";
@@ -85,7 +86,7 @@ void run_test_powersof() {
     /*    <BitDecomp(x), Powersof(y)> == x·y (mod q)         */
     std::cout << "\n--- Test 4: 对偶恒等式 (核心性质) ---\n";
     {
-        auto __u_p = unified::default_mp12_params(); long q = __u_p.q;          // 素数
+        auto u_p = unified::default_mp12_params(); long q = u_p.q;          // 素数
         int b = 2;
         std::mt19937_64 rng(42);
         std::uniform_int_distribution<long> dist(0, q - 1);
@@ -108,9 +109,9 @@ void run_test_powersof() {
     {
         std::mt19937_64 rng(123);
         struct Case { long q; int b; };
-        auto __u_p = unified::default_mp12_params();
-        Case cases[] = {{__u_p.q, 2}, {__u_p.q, 3}, {__u_p.q, 5}, {__u_p.q, 2},
-                        {__u_p.q, 4}, {__u_p.q, 8}, {__u_p.q, 16}};
+        auto u_p = unified::default_mp12_params();
+        Case cases[] = {{u_p.q, 2}, {u_p.q, 3}, {u_p.q, 5}, {u_p.q, 2},
+                        {u_p.q, 4}, {u_p.q, 8}, {u_p.q, 16}};
         for (auto c : cases) {
             std::uniform_int_distribution<long> dist(0, c.q - 1);
             int pass = 0, trials = 1000;
@@ -132,7 +133,7 @@ void run_test_powersof() {
     /* ───── Test 6: 向量版 + 平衡分解 ───── */
     std::cout << "\n--- Test 6: 向量版对偶恒等式 ---\n";
     {
-        auto __u_p = unified::default_mp12_params(); long q = __u_p.q;
+        auto u_p = unified::default_mp12_params(); long q = u_p.q;
         int b = 2;
         int n = 8;
         std::mt19937_64 rng(7);
@@ -156,7 +157,7 @@ void run_test_powersof() {
     /* ───── Test 7: 平衡分解的范数优势 ───── */
     std::cout << "\n--- Test 7: 平衡 vs 非平衡分解 (b=8) ---\n";
     {
-        auto __u_p = unified::default_mp12_params(); long q = __u_p.q;
+        auto u_p = unified::default_mp12_params(); long q = u_p.q;
         int b = 8;
         std::mt19937_64 rng(99);
         std::uniform_int_distribution<long> dist(0, q - 1);
@@ -184,21 +185,6 @@ void run_test_powersof() {
 }
 
 /* ───────────────────────────────────────────────────
-   文件输出辅助
-   ─────────────────────────────────────────────────── */
-static void write_to_bench_file(const std::string& content) {
-    constexpr const char* OUT_PATH = "bendmarking_output/bendmarking_plain-LWE.txt";
-    std::ofstream fout(OUT_PATH, std::ios::app);
-    if (fout.is_open()) {
-        fout << content;
-        fout.close();
-        std::cout << "  [Results written to " << OUT_PATH << "]\n";
-    } else {
-        std::cerr << "  [WARN] Could not open " << OUT_PATH << " for writing\n";
-    }
-}
-
-/* ───────────────────────────────────────────────────
    Benchmark: Powersof / BitDecomp 纯耗时
    ─────────────────────────────────────────────────── */
 static void bench_powersof() {
@@ -206,9 +192,9 @@ static void bench_powersof() {
     constexpr int WARMUP  = 3;
     constexpr int ITERS   = 20;
 
-    auto __u_p = unified::default_mp12_params();
-    long q = __u_p.q;
-    int  b = __u_p.b;
+    auto u_p = unified::default_mp12_params();
+    long q = u_p.q;
+    int  b = u_p.b;
     int  k = compute_k(q, b);
     int  n = 8;
 
@@ -275,5 +261,5 @@ static void bench_powersof() {
 
     std::cout << "\n--- Benchmark: Powersof / BitDecomp ---\n";
     std::cout << oss.str();
-    write_to_bench_file(oss.str());
+    bench_write(oss.str());
 }

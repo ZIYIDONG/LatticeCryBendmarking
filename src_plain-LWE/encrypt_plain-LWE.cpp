@@ -7,10 +7,10 @@
  *   ③ UniEnc (mask scheme)           — C = A·R + μ·G  with LWE-encrypted R bits
  */
 
-#include "../include_plain-LWE/unienc_plain-LWE.h"
-#include "../include_plain-LWE/matops_plain-LWE.h"
-#include "../include_plain-LWE/eval_plain-LWE.h"
-#include "../include_plain-LWE/unified_params_plain-LWE.h"
+#include "unienc_plain-LWE.h"
+#include "matops_plain-LWE.h"
+#include "eval_plain-LWE.h"
+#include "unified_params_plain-LWE.h"
 #include <iostream>
 #include <iomanip>
 #include <random>
@@ -25,12 +25,8 @@ using namespace matops;
 using namespace unienc;
 
 /* ───── 文件输出 ───── */
+#include "bench_utils_plain-LWE.h"
 static std::ostringstream enc_oss;
-static void write_to_bench_file() {
-    constexpr const char* OUT_PATH = "bendmarking_output/bendmarking_plain-LWE.txt";
-    std::ofstream fout(OUT_PATH, std::ios::app);
-    if (fout.is_open()) { fout << enc_oss.str(); fout.close(); }
-}
 
 /* ═══════════════════════════════════════════════════
    §1  LWE Encrypt 单比特加密正确性测试
@@ -406,6 +402,6 @@ void run_test_encrypt() {
     bench_uni_sub02_mat_mul_AR();  // 2
     bench_uni_sub03_scalar_mul_G();// 3
     bench_uni_sub04_mat_add_C();   // 4
-    write_to_bench_file();
+    bench_write(enc_oss.str());
     std::cout << "\nDone.\n";
 }
