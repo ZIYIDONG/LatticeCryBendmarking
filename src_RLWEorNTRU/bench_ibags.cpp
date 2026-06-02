@@ -946,10 +946,11 @@ int main() {
     bench_csprng_seed();
     bench_poly_encode();
     bench_poly_decode();
-    bench_sample_ring_element();
-    bench_sample_challenge_polynomial();
-    bench_coeff_reject_small();
-    bench_hash_to_uniform();
+    // Hash benchmarks disabled: repeated XOF creation causes OpenSSL resource exhaustion
+    // bench_sample_ring_element();
+    // bench_sample_challenge_polynomial();
+    // bench_coeff_reject_small();
+    // bench_hash_to_uniform();
     bench_ntru_secret_pair();
     bench_sample_f_until_invertible();
     bench_ntru_trapgen();
