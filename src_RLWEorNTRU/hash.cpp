@@ -21,14 +21,9 @@ void sample_ring_element(Xof& xof, const Params& pp, Poly* out)
 
     std::vector<int64_t> coeffs(pp.n);
     for (int i = 0; i < pp.n; ++i) {
-        // 拒绝采样: squeeze → mod q → accept if < q
-        for (;;) {
-            uint64_t r = xof.squeeze_u64();
-            if (r < static_cast<uint64_t>(pp.q)) {
-                coeffs[i] = static_cast<int64_t>(r);
-                break;
-            }
-        }
+        // 使用模约减 (q << 2^64, 偏倚可忽略)
+        uint64_t r = xof.squeeze_u64();
+        coeffs[i] = static_cast<int64_t>(r % static_cast<uint64_t>(pp.q));
     }
     *out = Poly(pp.n, std::move(coeffs));
 }
