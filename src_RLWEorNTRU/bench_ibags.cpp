@@ -551,12 +551,13 @@ static void bench_ntt_vs_naive(const Params& pp, const NttTable& tbl, int trials
    ========================================================================= */
 static void bench_gauss_sample_coeff() {
     const auto& pp = g_demo_params;
-    Xof xof(std::string(domain::GAUSS_FUNCTION));
-    std::vector<uint8_t> seed(32, 0x42);
-    xof.absorb(ByteSpan(seed.data(), seed.size()));
-    xof.finalize();
-
-    auto r = bench([&]() { (void)gauss_sample_coeff(xof, pp.sigma, pp.q); });
+    auto r = bench([&]() {
+        Xof xof(std::string(domain::GAUSS_FUNCTION));
+        std::vector<uint8_t> seed(32, 0x42);
+        xof.absorb(ByteSpan(seed.data(), seed.size()));
+        xof.finalize();
+        (void)gauss_sample_coeff(xof, pp.sigma, pp.q);
+    });
 
     std::ostringstream desc;
     desc << "n=" << pp.n << " q=" << pp.q << " sigma=" << pp.sigma;
@@ -568,12 +569,13 @@ static void bench_gauss_sample_coeff() {
    ========================================================================= */
 static void bench_gauss_sample_poly() {
     const auto& pp = g_demo_params;
-    Xof xof(std::string(domain::GAUSS_FUNCTION));
-    std::vector<uint8_t> seed(32, 0x42);
-    xof.absorb(ByteSpan(seed.data(), seed.size()));
-    xof.finalize();
-
-    auto r = bench([&]() { (void)gauss_sample_poly(xof, pp); });
+    auto r = bench([&]() {
+        Xof xof(std::string(domain::GAUSS_FUNCTION));
+        std::vector<uint8_t> seed(32, 0x42);
+        xof.absorb(ByteSpan(seed.data(), seed.size()));
+        xof.finalize();
+        (void)gauss_sample_poly(xof, pp);
+    });
 
     std::ostringstream desc;
     desc << "n=" << pp.n << " q=" << pp.q << " sigma=" << pp.sigma;
@@ -584,13 +586,12 @@ static void bench_gauss_sample_poly() {
    §13  xof — SHAKE256 squeeze 吞吐量
    ========================================================================= */
 static void bench_xof_squeeze() {
-    Xof xof(std::string(domain::H1_TO_RING));
-    std::vector<uint8_t> data(64, 0xAB);
-    xof.absorb(ByteSpan(data.data(), data.size()));
-    xof.finalize();
-
     const int N = 1000;
     auto r = bench([&]() {
+        Xof xof(std::string(domain::H1_TO_RING));
+        std::vector<uint8_t> data(64, 0xAB);
+        xof.absorb(ByteSpan(data.data(), data.size()));
+        xof.finalize();
         for (int i = 0; i < N; ++i) (void)xof.squeeze_u64();
     });
 
@@ -670,14 +671,14 @@ static void bench_poly_decode() {
    ========================================================================= */
 static void bench_sample_ring_element() {
     const auto& pp = g_demo_params;
-
-    Xof xof(std::string(domain::H1_TO_RING));
-    std::vector<uint8_t> data(64, 0xAB);
-    xof.absorb(ByteSpan(data.data(), data.size()));
-    xof.finalize();
-
     Poly out(pp.n);
-    auto r = bench([&]() { sample_ring_element(xof, pp, &out); });
+    auto r = bench([&]() {
+        Xof xof(std::string(domain::H1_TO_RING));
+        std::vector<uint8_t> data(64, 0xAB);
+        xof.absorb(ByteSpan(data.data(), data.size()));
+        xof.finalize();
+        sample_ring_element(xof, pp, &out);
+    });
 
     std::ostringstream desc;
     desc << "n=" << pp.n << " q=" << pp.q;
@@ -689,14 +690,14 @@ static void bench_sample_ring_element() {
    ========================================================================= */
 static void bench_sample_challenge_polynomial() {
     const auto& pp = g_demo_params;
-
-    Xof xof(std::string(domain::H2_CHALLENGE));
-    std::vector<uint8_t> data(64, 0xCD);
-    xof.absorb(ByteSpan(data.data(), data.size()));
-    xof.finalize();
-
     Poly out(pp.n);
-    auto r = bench([&]() { sample_challenge_polynomial(xof, pp, pp.kappa, &out); });
+    auto r = bench([&]() {
+        Xof xof(std::string(domain::H2_CHALLENGE));
+        std::vector<uint8_t> data(64, 0xCD);
+        xof.absorb(ByteSpan(data.data(), data.size()));
+        xof.finalize();
+        sample_challenge_polynomial(xof, pp, pp.kappa, &out);
+    });
 
     std::ostringstream desc;
     desc << "n=" << pp.n << " kappa=" << pp.kappa;
@@ -708,13 +709,13 @@ static void bench_sample_challenge_polynomial() {
    ========================================================================= */
 static void bench_coeff_reject_small() {
     const auto& pp = g_demo_params;
-
-    Xof xof(std::string(domain::H3_AGG_COEFF));
-    std::vector<uint8_t> data(64, 0xEF);
-    xof.absorb(ByteSpan(data.data(), data.size()));
-    xof.finalize();
-
-    auto r = bench([&]() { (void)coeff_reject_small(xof, pp.eta2, 24); });
+    auto r = bench([&]() {
+        Xof xof(std::string(domain::H3_AGG_COEFF));
+        std::vector<uint8_t> data(64, 0xEF);
+        xof.absorb(ByteSpan(data.data(), data.size()));
+        xof.finalize();
+        (void)coeff_reject_small(xof, pp.eta2, 24);
+    });
 
     std::ostringstream desc;
     desc << "B=" << pp.eta2;
@@ -727,13 +728,13 @@ static void bench_coeff_reject_small() {
    ========================================================================= */
 static void bench_hash_to_uniform() {
     const auto& pp = g_demo_params;
-
-    Xof xof(std::string(domain::H1_TO_RING));
-    std::vector<uint8_t> data(64, 0xAB);
-    xof.absorb(ByteSpan(data.data(), data.size()));
-    xof.finalize();
-
-    auto r = bench([&]() { (void)hash_to_uniform(xof, pp); });
+    auto r = bench([&]() {
+        Xof xof(std::string(domain::H1_TO_RING));
+        std::vector<uint8_t> data(64, 0xAB);
+        xof.absorb(ByteSpan(data.data(), data.size()));
+        xof.finalize();
+        (void)hash_to_uniform(xof, pp);
+    });
 
     std::ostringstream desc;
     desc << "n=" << pp.n << " q=" << pp.q;
