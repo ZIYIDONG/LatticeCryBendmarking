@@ -72,16 +72,16 @@ inline long mod_inv(long a, long q) {
  */
 inline Mat mat_inv_mod(const Mat& H, long q) {
     int n = H.size();
+    unsigned long long mu = barrett_mu(q);
     // 构造增广矩阵 [H | I_n]
     Mat aug(n, Vec(2 * n, 0));
     for (int i = 0; i < n; i++) {
         for (int j = 0; j < n; j++)
-            aug[i][j] = mod(H[i][j], q);
+            aug[i][j] = barrett_reduce_mp12(H[i][j], q, mu);
         aug[i][n + i] = 1;
     }
 
     for (int col = 0; col < n; col++) {
-        // 找主元（非零行）
         int pivot = -1;
         for (int row = col; row < n; row++) {
             if (aug[row][col] != 0) { pivot = row; break; }
@@ -92,18 +92,17 @@ inline Mat mat_inv_mod(const Mat& H, long q) {
         // 主元归一
         long inv_p = mod_inv(aug[col][col], q);
         for (int j = 0; j < 2 * n; j++)
-            aug[col][j] = mod(aug[col][j] * inv_p, q);
+            aug[col][j] = barrett_reduce_mp12(aug[col][j] * inv_p, q, mu);
 
         // 消去同列其他行
         for (int row = 0; row < n; row++) {
             if (row == col || aug[row][col] == 0) continue;
             long factor = aug[row][col];
             for (int j = 0; j < 2 * n; j++)
-                aug[row][j] = mod(aug[row][j] - factor * aug[col][j], q);
+                aug[row][j] = barrett_reduce_mp12(aug[row][j] - factor * aug[col][j], q, mu);
         }
     }
 
-    // 提取右半部分作为逆矩阵
     Mat inv = make_mat(n, n);
     for (int i = 0; i < n; i++)
         for (int j = 0; j < n; j++)
@@ -473,13 +472,17 @@ inline bool verify_extended(const Mat& A, const Mat& B,
     int n = (int)A.size();
     int mA = (int)A[0].size();
     int mB = (int)B[0].size();
+    unsigned long long mu = barrett_mu(q);
     Vec Ax(n, 0), Bx(n, 0);
     for (int i = 0; i < n; i++) {
-        for (int j = 0; j < mA; j++) Ax[i] = mod(Ax[i] + A[i][j] * x[j], q);
-        for (int j = 0; j < mB; j++) Bx[i] = mod(Bx[i] + B[i][j] * x[mA + j], q);
+        for (int j = 0; j < mA; j++)
+            Ax[i] = barrett_reduce_mp12(Ax[i] + A[i][j] * x[j], q, mu);
+        for (int j = 0; j < mB; j++)
+            Bx[i] = barrett_reduce_mp12(Bx[i] + B[i][j] * x[mA + j], q, mu);
     }
     for (int i = 0; i < n; i++)
-        if (mod(Ax[i] + Bx[i], q) != mod(u[i], q)) return false;
+        if (barrett_reduce_mp12(Ax[i] + Bx[i], q, mu) != barrett_reduce_mp12(u[i], q, mu))
+            return false;
     return true;
 }
 

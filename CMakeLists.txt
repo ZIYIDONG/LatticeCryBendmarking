@@ -8,23 +8,38 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O2")
 set(INC_DIR ${CMAKE_SOURCE_DIR}/include_plain-LWE)
 set(INC_RLWEOR_NTRU_DIR ${CMAKE_SOURCE_DIR}/include_RLWEorNTRU)
 
-# ── 安全级别选择 ──
-#    cmake ..                            → Demo (default, n=64, ~40-bit)
-#    cmake .. -DSECURITY_LEVEL=1         → NIST L1 (n=512, ~128-bit)
-#    cmake .. -DSECURITY_LEVEL=3         → NIST L3 (n=768, ~192-bit)
-#    cmake .. -DSECURITY_LEVEL=5         → NIST L5 (n=1024,~256-bit)
-set(SECURITY_LEVEL "" CACHE STRING "Security level: 1, 3, or 5 (empty=demo, n=64)")
+# ── 安全级别选择 (NIST IR 8413) ──
+#
+#   统一 CMake 标志 -DSECURITY_LEVEL=N，两模块各自映射到 NIST 级别:
+#
+#   标志           plain-LWE (KEM/加密)       IBAGS (签名)
+#   ────────────  ──────────────────────    ──────────────────
+#   Demo (默认)    n=64   Demo              n=64   Demo
+#   SEC_LEVEL=1    n=512  NIST Level 1      n=512  NIST Level 2  (签名无 Level 1)
+#   SEC_LEVEL=2    (同 Level 1)             n=512  NIST Level 2
+#   SEC_LEVEL=3    n=768  NIST Level 3      n=1024 NIST Level 3  (Dilithium3)
+#   SEC_LEVEL=4    (同 Level 3)             n=1024 NIST Level 4* 
+#   SEC_LEVEL=5    n=1024 NIST Level 5      n=1024 NIST Level 5  (Dilithium5)
+#
+#   参考: Kyber (L1/L3/L5), Dilithium (L2/L3/L5)
+set(SECURITY_LEVEL "" CACHE STRING "NIST security level: 1-5 (empty=demo)")
 if(SECURITY_LEVEL STREQUAL "5")
     add_compile_definitions(LATTICE_LEVEL_5)
-    message(STATUS ">>> Building NIST Level 5 (n=1024, q~2^32)")
+    message(STATUS ">>> NIST Level 5 — plain-LWE: n=1024 | IBAGS: n=1024 (Dilithium5)")
+elseif(SECURITY_LEVEL STREQUAL "4")
+    add_compile_definitions(LATTICE_LEVEL_5)
+    message(STATUS ">>> NIST Level 4 — plain-LWE: n=1024 | IBAGS: n=1024")
 elseif(SECURITY_LEVEL STREQUAL "3")
     add_compile_definitions(LATTICE_LEVEL_3)
-    message(STATUS ">>> Building NIST Level 3 (n=768, q~2^32)")
+    message(STATUS ">>> NIST Level 3 — plain-LWE: n=768 | IBAGS: n=1024 (Dilithium3)")
+elseif(SECURITY_LEVEL STREQUAL "2")
+    add_compile_definitions(LATTICE_LEVEL_1)
+    message(STATUS ">>> NIST Level 2 — plain-LWE: n=512 | IBAGS: n=512 (Dilithium2)")
 elseif(SECURITY_LEVEL STREQUAL "1")
     add_compile_definitions(LATTICE_LEVEL_1)
-    message(STATUS ">>> Building NIST Level 1 (n=512, q~2^27)")
+    message(STATUS ">>> NIST Level 1 — plain-LWE: n=512 | IBAGS: n=512 (Level 2)")
 else()
-    message(STATUS ">>> Building Demo (n=64, q=8191, ~40-bit)")
+    message(STATUS ">>> Demo (n=64) — plain-LWE q=8191, IBAGS q=7681")
 endif()
 
 # ─── 辅助宏 ───
@@ -98,3 +113,5 @@ add_executable(bench_ibags
 target_include_directories(bench_ibags PRIVATE ${INC_RLWEOR_NTRU_DIR})
 target_compile_options(bench_ibags PRIVATE -Wall -Wextra)
 target_link_libraries(bench_ibags PRIVATE ibags_core)
+
+

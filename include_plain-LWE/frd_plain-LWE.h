@@ -49,8 +49,31 @@ using Vec = std::vector<long>;
 using Mat = std::vector<Vec>;
 
 inline long mod_pos(long x, long q) {
-    return ((x % q) + q) % q;
+    long r = x % q;
+    if (r < 0) r += q;
+    return r;
 }
+
+// ── Barrett 约减 (plain-LWE 侧) ──
+inline unsigned long long barrett_mu(long q) {
+    return (unsigned long long)(((unsigned __int128)1 << 64) / (unsigned long long)q);
+}
+
+inline long barrett_reduce_frd(long x, long q, unsigned long long mu) {
+    bool neg = (x < 0);
+    unsigned long long abs_x;
+    if (neg) abs_x = (unsigned long long)(-(x + 1)) + 1;
+    else     abs_x = (unsigned long long)x;
+    unsigned long long t = (unsigned long long)(((unsigned __int128)abs_x * mu) >> 64);
+    unsigned long long r = abs_x - t * (unsigned long long)q;
+    if (r >= (unsigned long long)q) r -= q;
+    if (neg && r != 0) r = (unsigned long long)q - r;
+    return (long)r;
+}
+
+// 条件加减 (输入范围已知时使用)
+inline long mod_add(long x, long q) { if (x >= q) x -= q; return x; }
+inline long mod_sub(long x, long q) { if (x < 0)  x += q; return x; }
 
 inline Mat make_zero_mat(int r, int c) {
     return Mat(r, Vec(c, 0));
@@ -79,39 +102,40 @@ inline Vec poly_trim(const Vec& p, int n) {
     return r;
 }
 
-// 多项式加法 mod q
+// 多项式加法 mod q (条件减法, 输入范围 ≤ 2q-2)
 inline Vec poly_add(const Vec& a, const Vec& b, long q) {
     int n = (int)std::max(a.size(), b.size());
     Vec r(n, 0);
     for (int i = 0; i < n; i++) {
         long va = (i < (int)a.size()) ? a[i] : 0;
         long vb = (i < (int)b.size()) ? b[i] : 0;
-        r[i] = mod_pos(va + vb, q);
+        r[i] = mod_add(va + vb, q);
     }
     return r;
 }
 
-// 多项式减法 mod q
+// 多项式减法 mod q (条件加法, 输入范围 [-(q-1), q-1])
 inline Vec poly_sub(const Vec& a, const Vec& b, long q) {
     int n = (int)std::max(a.size(), b.size());
     Vec r(n, 0);
     for (int i = 0; i < n; i++) {
         long va = (i < (int)a.size()) ? a[i] : 0;
         long vb = (i < (int)b.size()) ? b[i] : 0;
-        r[i] = mod_pos(va - vb, q);
+        r[i] = mod_sub(va - vb, q);
     }
     return r;
 }
 
-// 多项式乘法 mod q (普通卷积,不约化)
+// 多项式乘法 mod q (普通卷积,不约化) — Barrett 内循环
 inline Vec poly_mul(const Vec& a, const Vec& b, long q) {
     int da = poly_deg(a), db = poly_deg(b);
     if (da < 0 || db < 0) return Vec{0};
     Vec r(da + db + 1, 0);
+    unsigned long long mu = barrett_mu(q);
     for (int i = 0; i <= da; i++)
         if (a[i] != 0)
             for (int j = 0; j <= db; j++)
-                r[i + j] = mod_pos(r[i + j] + a[i] * b[j], q);
+                r[i + j] = barrett_reduce_frd(r[i + j] + a[i] * b[j], q, mu);
     return r;
 }
 
@@ -129,20 +153,19 @@ inline long mod_inv_q(long a, long q) {
     return mod_pos(t, q);
 }
 
-// 多项式取模: a(x) mod f(x), 都在 F_q[x]
-// 经典的"长除法"
+// 多项式取模: a(x) mod f(x) — Barrett 内循环
 inline Vec poly_mod(Vec a, const Vec& f, long q) {
     int df = poly_deg(f);
     if (df < 0) throw std::runtime_error("mod by zero polynomial");
-    long inv_lead = mod_inv_q(f[df], q);  // f 的首项系数的逆
+    long inv_lead = mod_inv_q(f[df], q);
+    unsigned long long mu = barrett_mu(q);
 
     int da = poly_deg(a);
     while (da >= df) {
-        long coef = mod_pos(a[da] * inv_lead, q);
-        // 从 a 中减去 coef · x^{da-df} · f
+        long coef = barrett_reduce_frd(a[da] * inv_lead, q, mu);
         for (int i = 0; i <= df; i++) {
             int idx = da - df + i;
-            a[idx] = mod_pos(a[idx] - coef * f[i], q);
+            a[idx] = barrett_reduce_frd(a[idx] - coef * f[i], q, mu);
         }
         da = poly_deg(a);
     }
@@ -343,18 +366,15 @@ inline Mat frd_encode(const FRDContext& ctx, const Vec& id) {
     for (int i = 0; i < n; i++) col[i] = mod_pos(id[i], q);
     for (int i = 0; i < n; i++) H[i][0] = col[i];
 
-    // 后续列: col_j = x · col_{j-1} mod f(x)
+    // 后续列: col_j = x · col_{j-1} mod f(x) — Barrett 内循环
+    unsigned long long mu = barrett_mu(q);
     for (int j = 1; j < n; j++) {
-        // 左移一位:新的 col 是 (0, col[0], col[1], ..., col[n-2]),
-        // 而 col[n-1] 变成了 x^n 的系数 c
         long c = col[n - 1];
         for (int i = n - 1; i > 0; i--) col[i] = col[i - 1];
         col[0] = 0;
-        // 减去 c · (x^n - 实际值) → 等价于加 c · (-(f 除掉首一项))
-        // 即:col -= c · (f[0], f[1], ..., f[n-1])
         if (c != 0) {
             for (int i = 0; i < n; i++)
-                col[i] = mod_pos(col[i] - c * f[i], q);
+                col[i] = barrett_reduce_frd(col[i] - c * f[i], q, mu);
         }
         for (int i = 0; i < n; i++) H[i][j] = col[i];
     }

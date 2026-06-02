@@ -1,8 +1,9 @@
 build*/
 benchmarking_output/
 CMakeFiles/
-
 logs/
 *.log
 .vscode/settings.json
 .kilo/
+.claude/
+.vscode/

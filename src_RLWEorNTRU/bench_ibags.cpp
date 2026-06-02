@@ -27,6 +27,7 @@
 #include <iomanip>
 #include <random>
 #include <chrono>
+#include <ctime>
 #include <vector>
 #include <string>
 #include <numeric>
@@ -42,8 +43,9 @@ using Clock = std::chrono::high_resolution_clock;
 /* =========================================================================
    全局参数
    ========================================================================= */
-static Params g_demo_params;
-static Params g_ntt_params;
+static Params    g_demo_params;
+static Params    g_ntt_params;
+static NttTable  g_ntt_table;  // 在 init_params() 中赋值
 
 static void init_params() {
     g_demo_params = Params::params_demo_64();
@@ -59,26 +61,27 @@ static void init_params() {
     g_ntt_params.max_signers         = 8;
     g_ntt_params.max_rejection_loops = 10;
     g_ntt_params.kappa               = 8;
+
+    // Precompute NTT table once for all benchmarks
+    g_ntt_table = NttTable::create(g_ntt_params);
 }
 
 /* =========================================================================
    计时工具
    ========================================================================= */
 struct BenchResult {
-    double avg_us;
-    double min_us;
-    double max_us;
-    double stddev_us;
-    double median_us;
+    double avg_us, min_us, max_us, stddev_us, median_us;
+    double p99_us, p999_us;
+    double avg_cycles;
     double throughput_ops;
-    int warmup;
-    int timed_iters;
+    int warmup, timed_iters;
 };
 
 static BenchResult bench(const std::function<void()>& func) {
     auto stats = run_benchmark(func, 1000, 50);
     return { stats.avg_us, stats.min_us, stats.max_us,
              stats.stddev_us, stats.median_us,
+             stats.p99_us, stats.p999_us, stats.avg_cycles,
              stats.avg_us > 0 ? 1e6 / stats.avg_us : 0,
              50, 1000 };
 }
@@ -88,6 +91,7 @@ static BenchResult bench_custom(const std::function<void()>& func,
     auto stats = run_benchmark(func, iters, warmup);
     return { stats.avg_us, stats.min_us, stats.max_us,
              stats.stddev_us, stats.median_us,
+             stats.p99_us, stats.p999_us, stats.avg_cycles,
              stats.avg_us > 0 ? 1e6 / stats.avg_us : 0,
              warmup, iters };
 }
@@ -107,8 +111,14 @@ static void print_and_save(const std::string& title, const BenchResult& r,
         << "  Median    : " << std::setw(8) << r.median_us << " us\n"
         << "  Min       : " << std::setw(8) << r.min_us  << " us\n"
         << "  Max       : " << std::setw(8) << r.max_us  << " us\n"
+        << "  P99       : " << std::setw(8) << r.p99_us  << " us\n"
+        << "  P999      : " << std::setw(8) << r.p999_us << " us\n"
         << "  StdDev    : " << std::setw(8) << r.stddev_us << " us\n"
-        << "  Throughput: " << std::setw(8) << r.throughput_ops << " ops/s\n";
+        << "  Throughput: " << std::setw(8) << r.throughput_ops << " ops/s";
+    if (r.avg_cycles > 0) {
+        oss << "\n  AvgCycles : " << std::setw(8) << std::setprecision(0) << r.avg_cycles;
+    }
+    oss << "\n";
 
     std::cout << "\n--- " << title << " ---\n" << oss.str();
 
@@ -121,14 +131,20 @@ static void print_and_save(const std::string& title, const BenchResult& r,
 }
 
 /* =========================================================================
-   辅助: 随机多项式生成
+   辅助: 随机多项式生成 (变化种子，避免固定输入)
    ========================================================================= */
-static Poly random_poly(const Params& pp) {
+static Poly random_poly(const Params& pp, uint64_t seed = 42) {
     std::vector<int64_t> coeffs(pp.n);
-    std::mt19937_64 rng(42);
+    std::mt19937_64 rng(seed);
     std::uniform_int_distribution<int64_t> dist(0, pp.q - 1);
     for (int i = 0; i < pp.n; ++i) coeffs[i] = dist(rng);
     return Poly::from_canonical(pp, std::move(coeffs));
+}
+
+/// 为每个迭代生成不同种子的多项式对 (用于 NTT vs naive 对比)
+static std::pair<Poly, Poly> random_poly_pair(const Params& pp, int iter) {
+    uint64_t base = static_cast<uint64_t>(iter) * 0x9E3779B97F4A7C15ULL;
+    return {random_poly(pp, base), random_poly(pp, base ^ 0xDEADBEEF)};
 }
 
 static SeedCSPRNG make_deterministic_csprng() {
@@ -138,23 +154,111 @@ static SeedCSPRNG make_deterministic_csprng() {
 }
 
 /* =========================================================================
-   §1  mod_reduce — Barrett Reduction
+   §1  mod_reduce — Barrett Reduction (预计算复用, 与 NTT 路径一致)
    ========================================================================= */
-static void bench_barrett_reduce() {
-    const auto& pp = g_demo_params;
+static void bench_barrett_reduce(const Params& pp) {
     const int N = 10000;
     std::vector<int64_t> inputs(N);
     std::mt19937_64 rng(99);
-    std::uniform_int_distribution<int64_t> dist(0, pp.q * 3);
+    // 输入范围覆盖 NTT 场景: 系数乘 zeta 可到 ~q²，加减可达 ±2q
+    std::uniform_int_distribution<int64_t> dist(-static_cast<int64_t>(pp.q) * 2,
+                                                 static_cast<int64_t>(pp.q) * 2);
     for (int i = 0; i < N; ++i) inputs[i] = dist(rng);
 
+    // 预计算 Barrett 常数 (模拟 NTT 中的复用路径)
+    BarrettConst bc = make_barrett(pp.q);
+    volatile int64_t sink = 0;
+
     auto r = bench([&]() {
-        for (int i = 0; i < N; ++i) (void)barrett_reduce(inputs[i], pp.q);
+        for (int i = 0; i < N; ++i) sink = barrett_reduce(inputs[i], bc);
     });
+    (void)sink;
+
+    std::ostringstream desc;
+    desc << "n=" << pp.n << " q=" << pp.q << " (per " << N << " calls, cached BarrettConst)";
+    print_and_save("Barrett Reduction (cached)", r, desc.str());
+}
+
+/* =========================================================================
+   §1b  mod_reduce — Montgomery Multiplication
+   ========================================================================= */
+static void bench_montgomery_mul(const Params& pp) {
+    MontgomeryConst mc = make_montgomery(pp.q);
+    const int N = 10000;
+    std::mt19937_64 rng(77);
+    std::uniform_int_distribution<int64_t> dist(0, pp.q - 1);
+
+    std::vector<int64_t> a_mont(N), b_mont(N);
+    for (int i = 0; i < N; ++i) {
+        a_mont[i] = to_montgomery(dist(rng), mc);
+        b_mont[i] = to_montgomery(dist(rng), mc);
+    }
+    volatile int64_t sink = 0;
+
+    auto r = bench([&]() {
+        for (int i = 0; i < N; ++i) sink = montgomery_mul(a_mont[i], b_mont[i], mc);
+    });
+    (void)sink;
 
     std::ostringstream desc;
     desc << "n=" << pp.n << " q=" << pp.q << " (per " << N << " calls)";
-    print_and_save("Barrett Reduction", r, desc.str());
+    print_and_save("Montgomery Mul", r, desc.str());
+}
+
+/* =========================================================================
+   §1c  mod_reduce — Barrett Reduction (constant-time)
+   ========================================================================= */
+static void bench_barrett_reduce_ct(const Params& pp) {
+    const int N = 10000;
+    std::vector<int64_t> inputs(N);
+    std::mt19937_64 rng(99);
+    std::uniform_int_distribution<int64_t> dist(-static_cast<int64_t>(pp.q) * 2,
+                                                 static_cast<int64_t>(pp.q) * 2);
+    for (int i = 0; i < N; ++i) inputs[i] = dist(rng);
+
+    BarrettConst bc = make_barrett(pp.q);
+    volatile int64_t sink = 0;
+
+    auto r = bench([&]() {
+        for (int i = 0; i < N; ++i) sink = barrett_reduce_ct(inputs[i], bc);
+    });
+    (void)sink;
+
+    std::ostringstream desc;
+    desc << "n=" << pp.n << " q=" << pp.q << " (per " << N << " calls, constant-time)";
+    print_and_save("Barrett Reduction (CT)", r, desc.str());
+}
+
+/* =========================================================================
+   §1d  mod_reduce — 多项式全系数约减 reduce_mod_q
+   ========================================================================= */
+static void bench_reduce_mod_q(const Params& pp) {
+    Poly a = random_poly(pp, 777);
+    // 把系数放大到非 canonical，模拟环约减后的输入
+    int64_t q = static_cast<int64_t>(pp.q);
+    for (int i = 0; i < pp.n; ++i) a[i] = a[i] * 100 + i - q;
+    auto r = bench([&]() { a.reduce_mod_q(pp); });
+    std::ostringstream desc;
+    desc << "n=" << pp.n << " q=" << pp.q;
+    print_and_save("Poly reduce_mod_q", r, desc.str());
+}
+
+/* =========================================================================
+   §1e  NttTable — 预计算开销
+   ========================================================================= */
+static void bench_ntt_table_create(const Params& pp) {
+    // 只跑少量迭代 — 这是一次性开销，不需要大样本
+    const int iters = 100;
+    const int warmup = 5;
+
+    auto r = bench_custom([&]() {
+        volatile auto tbl = NttTable::create(pp);
+        (void)tbl;
+    }, iters, warmup);
+
+    std::ostringstream desc;
+    desc << "n=" << pp.n << " q=" << pp.q;
+    print_and_save("NttTable::create (precompute)", r, desc.str());
 }
 
 /* =========================================================================
@@ -188,10 +292,20 @@ static void bench_poly_sub() {
 }
 
 /* =========================================================================
+   §3b  poly — 多项式取负 O(n)
+   ========================================================================= */
+static void bench_poly_neg(const Params& pp) {
+    Poly a = random_poly(pp);
+    auto r = bench([&]() { (void)poly_neg(a, pp); });
+    std::ostringstream desc;
+    desc << "n=" << pp.n << " q=" << pp.q;
+    print_and_save("Poly Neg", r, desc.str());
+}
+
+/* =========================================================================
    §4  poly — 朴素乘法 O(n^2)
    ========================================================================= */
-static void bench_poly_mul_naive() {
-    const auto& pp = g_demo_params;
+static void bench_poly_mul_naive(const Params& pp) {
     Poly a = random_poly(pp);
     Poly b = random_poly(pp);
 
@@ -200,6 +314,38 @@ static void bench_poly_mul_naive() {
     std::ostringstream desc;
     desc << "n=" << pp.n << " q=" << pp.q;
     print_and_save("Poly Mul (naive O(n^2))", r, desc.str());
+}
+
+/* =========================================================================
+   §4b  poly — 标量乘法 O(n)
+   ========================================================================= */
+static void bench_poly_mul_scalar(const Params& pp) {
+    Poly a = random_poly(pp);
+    // 使用 NTT zeta 值作为典型标量: 协议中常乘以挑战系数 ∈ [0, q)
+    std::mt19937_64 rng(123);
+    int64_t scalar = std::uniform_int_distribution<int64_t>(1, pp.q - 1)(rng);
+
+    auto r = bench([&]() { (void)poly_mul_scalar(a, scalar, pp); });
+
+    std::ostringstream desc;
+    desc << "n=" << pp.n << " q=" << pp.q;
+    print_and_save("Poly Mul Scalar", r, desc.str());
+}
+
+/* =========================================================================
+   §4c  poly — 环约减 Y^n = -1
+   ========================================================================= */
+static void bench_poly_ring_reduce_raw(const Params& pp) {
+    // 构造一个 (2n-1) 长度的模拟卷积结果
+    int n = pp.n;
+    std::vector<int64_t> conv(2 * n - 1);
+    std::mt19937_64 rng(555);
+    std::uniform_int_distribution<int64_t> dist(0, pp.q - 1);
+    for (auto& v : conv) v = dist(rng);
+    auto r = bench([&]() { (void)poly_ring_reduce_raw(pp, conv); });
+    std::ostringstream desc;
+    desc << "n=" << pp.n << " q=" << pp.q;
+    print_and_save("Poly Ring Reduce", r, desc.str());
 }
 
 /* =========================================================================
@@ -217,11 +363,35 @@ static void bench_poly_norm_inf() {
 }
 
 /* =========================================================================
+   §5b  poly — 范数边界检查 (constant-time)
+   ========================================================================= */
+static void bench_poly_norm_bound_check(const Params& pp) {
+    Poly a = random_poly(pp);
+    uint64_t bound = static_cast<uint64_t>(pp.eta1);
+    auto r = bench([&]() { (void)poly_norm_bound_check(a, bound, pp); });
+    std::ostringstream desc;
+    desc << "n=" << pp.n << " q=" << pp.q << " bound=" << bound;
+    print_and_save("Poly Norm Bound Check", r, desc.str());
+}
+
+/* =========================================================================
+   §5c  poly — constant-time 相等比较
+   ========================================================================= */
+static void bench_poly_equal_ct(const Params& pp) {
+    Poly a = random_poly(pp);
+    Poly b = random_poly(pp, 99);
+    volatile bool sink = false;
+    auto r = bench([&]() { sink = poly_equal_ct(a, b); });
+    (void)sink;
+    std::ostringstream desc;
+    desc << "n=" << pp.n << " q=" << pp.q;
+    print_and_save("Poly Equal (CT)", r, desc.str());
+}
+
+/* =========================================================================
    §6  poly — 多项式求逆 (扩展欧几里得)
    ========================================================================= */
-static void bench_poly_inv() {
-    const auto& pp = g_ntt_params;
-
+static void bench_poly_inv(const Params& pp) {
     auto csprng = make_deterministic_csprng();
     SecretPoly f_secret = sample_ntru_secret_f(pp, csprng);
 
@@ -246,18 +416,31 @@ static void bench_poly_inv() {
 }
 
 /* =========================================================================
+   §6b  poly — 可逆性快速检查
+   ========================================================================= */
+static void bench_poly_is_invertible(const Params& pp) {
+    auto csprng = make_deterministic_csprng();
+    SecretPoly f_secret = sample_ntru_secret_f(pp, csprng);
+    std::vector<int64_t> coeffs(pp.n);
+    for (int i = 0; i < pp.n; ++i) coeffs[i] = f_secret.coeff(i);
+    Poly f_poly = Poly::from_coeffs(pp, coeffs);
+    f_poly.reduce_mod_q(pp);
+    volatile bool sink = false;
+    auto r = bench([&]() { sink = poly_is_invertible_mod_q(f_poly, pp); });
+    (void)sink;
+    std::ostringstream desc;
+    desc << "n=" << pp.n << " q=" << pp.q;
+    print_and_save("Poly Is Invertible", r, desc.str());
+}
+
+/* =========================================================================
    §7  poly_ntt — 正向 NTT (Cooley-Tukey)
    ========================================================================= */
-static void bench_ntt_forward() {
-    const auto& pp = g_ntt_params;
-    if (!is_ntt_friendly(pp)) {
-        std::cout << "  [SKIP] NTT Forward — q not NTT-friendly\n";
-        return;
-    }
+static void bench_ntt_forward(const Params& pp, const NttTable& tbl) {
     Poly a = random_poly(pp);
     NttPoly ntt(pp.n);
 
-    auto r = bench([&]() { (void)poly_ntt(a, pp, &ntt); });
+    auto r = bench([&]() { (void)poly_ntt(a, tbl, &ntt); });
 
     std::ostringstream desc;
     desc << "n=" << pp.n << " q=" << pp.q;
@@ -267,18 +450,13 @@ static void bench_ntt_forward() {
 /* =========================================================================
    §8  poly_ntt — 逆向 NTT (Gentleman-Sande)
    ========================================================================= */
-static void bench_ntt_inverse() {
-    const auto& pp = g_ntt_params;
-    if (!is_ntt_friendly(pp)) {
-        std::cout << "  [SKIP] NTT Inverse — q not NTT-friendly\n";
-        return;
-    }
+static void bench_ntt_inverse(const Params& pp, const NttTable& tbl) {
     Poly a = random_poly(pp);
     NttPoly ntt(pp.n);
-    (void)poly_ntt(a, pp, &ntt);
+    (void)poly_ntt(a, tbl, &ntt);
     Poly out(pp.n);
 
-    auto r = bench([&]() { (void)poly_invntt(ntt, pp, &out); });
+    auto r = bench([&]() { (void)poly_invntt(ntt, tbl, &out); });
 
     std::ostringstream desc;
     desc << "n=" << pp.n << " q=" << pp.q;
@@ -288,19 +466,14 @@ static void bench_ntt_inverse() {
 /* =========================================================================
    §9  poly_ntt — NTT 往返 (Forward + Inverse)
    ========================================================================= */
-static void bench_ntt_roundtrip() {
-    const auto& pp = g_ntt_params;
-    if (!is_ntt_friendly(pp)) {
-        std::cout << "  [SKIP] NTT Roundtrip — q not NTT-friendly\n";
-        return;
-    }
+static void bench_ntt_roundtrip(const Params& pp, const NttTable& tbl) {
     Poly a = random_poly(pp);
     NttPoly ntt(pp.n);
 
     auto r = bench([&]() {
-        (void)poly_ntt(a, pp, &ntt);
+        (void)poly_ntt(a, tbl, &ntt);
         Poly out(pp.n);
-        (void)poly_invntt(ntt, pp, &out);
+        (void)poly_invntt(ntt, tbl, &out);
     });
 
     std::ostringstream desc;
@@ -311,29 +484,66 @@ static void bench_ntt_roundtrip() {
 /* =========================================================================
    §10  poly_ntt — NTT 乘法 (NTT→Pointwise→INTT)
    ========================================================================= */
-static void bench_ntt_mul() {
-    const auto& pp = g_ntt_params;
-    if (!is_ntt_friendly(pp)) {
-        std::cout << "  [SKIP] NTT Mul — q not NTT-friendly\n";
-        return;
-    }
+static void bench_ntt_mul(const Params& pp, const NttTable& tbl) {
     Poly a = random_poly(pp);
     Poly b = random_poly(pp);
     NttPoly ntt_a(pp.n), ntt_b(pp.n);
-    (void)poly_ntt(a, pp, &ntt_a);
-    (void)poly_ntt(b, pp, &ntt_b);
+    (void)poly_ntt(a, tbl, &ntt_a);
+    (void)poly_ntt(b, tbl, &ntt_b);
 
     NttPoly ntt_c(pp.n);
     Poly c(pp.n);
 
     auto r = bench([&]() {
-        (void)poly_pointwise_mul_ntt(ntt_a, ntt_b, pp, &ntt_c);
-        (void)poly_invntt(ntt_c, pp, &c);
+        (void)poly_pointwise_mul_ntt(ntt_a, ntt_b, tbl, &ntt_c);
+        (void)poly_invntt(ntt_c, tbl, &c);
     });
 
     std::ostringstream desc;
     desc << "n=" << pp.n << " q=" << pp.q;
     print_and_save("NTT Mul (Pointwise+INTT)", r, desc.str());
+}
+
+/* =========================================================================
+   §10b  poly_ntt — 完整 NTT 乘法管线 (2×NTT + PW + INTT)
+   ========================================================================= */
+static void bench_poly_mul_ntt_full(const Params& pp, const NttTable& tbl) {
+    Poly a = random_poly(pp);
+    Poly b = random_poly(pp);
+    Poly c(pp.n);
+
+    auto r = bench([&]() { (void)poly_mul_ntt(a, b, tbl, &c); });
+
+    std::ostringstream desc;
+    desc << "n=" << pp.n << " q=" << pp.q;
+    print_and_save("NTT Mul Full (2xNTT+PW+INTT)", r, desc.str());
+}
+
+/* =========================================================================
+   §10c  poly_ntt — NTT Mul vs Naive Mul 对比 (同输入)
+   ========================================================================= */
+static void bench_ntt_vs_naive(const Params& pp, const NttTable& tbl, int trials = 5) {
+    // 对同一对输入分别测 NTT 乘法和 Naive 乘法 — 完整管线公平对比
+    for (int t = 0; t < trials; ++t) {
+        auto [a, b] = random_poly_pair(pp, t);
+
+        // Naive (O(n²))
+        auto r_naive = bench_custom([&]() { (void)poly_mul_naive(a, b, pp); }, 100, 10);
+
+        // NTT 完整管线 (2×NTT + Pointwise + INTT)
+        Poly c(pp.n);
+        auto r_ntt = bench_custom([&]() { (void)poly_mul_ntt(a, b, tbl, &c); }, 100, 10);
+
+        double speedup = (r_naive.avg_us > 0) ? r_naive.avg_us / r_ntt.avg_us : 0.0;
+
+        std::ostringstream desc;
+        desc << "n=" << pp.n << " q=" << pp.q
+             << " trial=" << (t + 1)
+             << " | naive=" << std::fixed << std::setprecision(1) << r_naive.avg_us << " us"
+             << " ntt(full)=" << r_ntt.avg_us << " us"
+             << " speedup=" << std::setprecision(2) << speedup << "x";
+        print_and_save("NTT vs Naive Mul", r_ntt, desc.str());
+    }
 }
 
 /* =========================================================================
@@ -568,6 +778,25 @@ static void bench_ntru_trapgen() {
 }
 
 /* =========================================================================
+   §23b  ntru_trapgen — 陷门验证
+   ========================================================================= */
+static void bench_check_trapdoor_basis(const Params& pp) {
+    auto csprng = make_deterministic_csprng();
+    auto config = TrapGenConfig::default_config();
+    config.max_invertibility_attempts = 10;
+    PublicTrapdoorParams pub(pp);
+    MasterTrapdoorSecret sec(pp.n);
+    auto st = ntru_trapgen(pp, csprng, config, &pub, &sec);
+    if (!st.ok()) { std::cout << "  [SKIP] Trapdoor check — TrapGen failed\n"; return; }
+    volatile bool sink = false;
+    auto r = bench_custom([&]() { sink = check_trapdoor_basis(pp, sec.basis, pub.h); }, 100, 10);
+    (void)sink;
+    std::ostringstream desc;
+    desc << "n=" << pp.n << " q=" << pp.q;
+    print_and_save("Check Trapdoor Basis", r, desc.str());
+}
+
+/* =========================================================================
    §24  ntru_trapgen — sample_f_until_invertible
    ========================================================================= */
 static void bench_sample_f_until_invertible() {
@@ -585,84 +814,151 @@ static void bench_sample_f_until_invertible() {
 }
 
 /* =========================================================================
-   main — 统一基准测试入口
+   多级参数表 — NTT 相关基准在所有安全级别上运行
+   ========================================================================= */
+struct ParamEntry {
+    const char* name;
+    Params      params;
+};
+
+static std::vector<ParamEntry> make_ntt_param_entries() {
+    return {
+        {"Demo (n=64)",       Params::params_demo_64()},
+        {"Level 1 (n=512)",   Params::params_level2_512()},
+        {"Level 3 (n=1024)",  Params::params_level3_1024()},
+        {"Level 5 (n=1024)",  Params::params_level5_1024()},
+    };
+}
+
+static std::string make_timestamp() {
+    auto now = std::chrono::system_clock::now();
+    auto t = std::chrono::system_clock::to_time_t(now);
+    std::ostringstream oss;
+    oss << std::put_time(std::localtime(&t), "%Y-%m-%d %H:%M:%S");
+    return oss.str();
+}
+
+/* =========================================================================
+   main — 统一基准测试入口 (多级 NTT + 单级非 NTT)
    ========================================================================= */
 int main() {
     init_params();
 
-    std::cout << "============================================================\n"
-              << "  IBAGS (RLWE/NTRU) — Cryptographic Operation Benchmarks\n"
-              << "============================================================\n"
-              << "  Demo  Params: n=" << g_demo_params.n
-              << " q=" << g_demo_params.q
-              << " sigma=" << g_demo_params.sigma << "\n"
-              << "  NTT   Params: n=" << g_ntt_params.n
-              << " q=" << g_ntt_params.q << "\n"
-              << "============================================================\n\n";
+    constexpr const char* OUT_PATH = "benchmarking_output/benchmarking_ibags.txt";
 
+    // ── 文件头 (覆盖 + 时间戳) ──
     {
-        constexpr const char* OUT_PATH = "benchmarking_output/benchmarking_ibags.txt";
         std::ofstream fout(OUT_PATH, std::ios::trunc);
         if (fout.is_open()) {
             fout << "==========================================================\n"
                  << "  IBAGS (RLWE/NTRU) — Benchmark Run\n"
-                 << "==========================================================\n"
-                 << "  Demo  Params: n=" << g_demo_params.n
-                 << " q=" << g_demo_params.q
-                 << " sigma=" << (int)g_demo_params.sigma << "\n"
-                 << "  NTT   Params: n=" << g_ntt_params.n
-                 << " q=" << g_ntt_params.q << "\n";
+                 << "  Timestamp: " << make_timestamp() << "\n"
+                 << "==========================================================\n\n";
             fout.close();
         }
     }
 
-    /* §1  mod_reduce */
-    bench_barrett_reduce();
+    std::cout << "============================================================\n"
+              << "  IBAGS (RLWE/NTRU) — Cryptographic Operation Benchmarks\n"
+              << "  Timestamp: " << make_timestamp() << "\n"
+              << "============================================================\n\n";
 
-    /* §2-6  poly */
+    // ════════════════════════════════════════════════════════════════
+    // §A  NTT 专项基准 — 遍历所有安全级别
+    // ════════════════════════════════════════════════════════════════
+    auto entries = make_ntt_param_entries();
+    for (const auto& entry : entries) {
+        const Params& pp = entry.params;
+        if (!is_ntt_friendly(pp)) {
+            std::cout << "\n--- SKIP " << entry.name
+                      << " (q not NTT-friendly) ---\n";
+            continue;
+        }
+        NttTable tbl = NttTable::create(pp);
+
+        // 级别分隔标题
+        {
+            std::ostringstream header;
+            header << "\n========== " << entry.name
+                   << " n=" << pp.n << " q=" << pp.q << " ==========\n";
+            std::cout << header.str();
+            std::ofstream fout(OUT_PATH, std::ios::app);
+            if (fout.is_open()) { fout << header.str(); fout.close(); }
+        }
+
+        // 模约减 (每个级别 q 不同)
+        bench_barrett_reduce(pp);
+        bench_barrett_reduce_ct(pp);
+        bench_montgomery_mul(pp);
+        bench_reduce_mod_q(pp);
+
+        // NTT 预计算开销
+        bench_ntt_table_create(pp);
+
+        // NTT 核心操作
+        bench_ntt_forward(pp, tbl);
+        bench_ntt_inverse(pp, tbl);
+        bench_ntt_roundtrip(pp, tbl);
+        bench_ntt_mul(pp, tbl);
+        bench_poly_mul_ntt_full(pp, tbl);
+
+        // 基础多项式操作 (所有级别 O(n))
+        bench_poly_mul_scalar(pp);
+        bench_poly_neg(pp);
+        bench_poly_norm_bound_check(pp);
+        bench_poly_equal_ct(pp);
+        bench_poly_ring_reduce_raw(pp);
+
+        // O(n²) 操作 (仅 Demo 和 L1)
+        if (pp.n <= 512) {
+            bench_poly_mul_naive(pp);
+            bench_poly_inv(pp);
+            bench_poly_is_invertible(pp);
+            bench_check_trapdoor_basis(pp);
+        }
+
+        // NTT vs Naive 对比
+        int vs_trials = (pp.n <= 512) ? 5 : 1;
+        bench_ntt_vs_naive(pp, tbl, vs_trials);
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    // §B  非 NTT 基准 — 仅在 Demo 参数运行 (与多项式/签名逻辑相关)
+    // ════════════════════════════════════════════════════════════════
+    std::cout << "\n========== Non-NTT Operations (Demo) ==========\n";
+    {
+        std::ofstream fout(OUT_PATH, std::ios::app);
+        if (fout.is_open()) {
+            fout << "\n========== Non-NTT Operations (Demo) ==========\n";
+            fout.close();
+        }
+    }
+
     bench_poly_add();
     bench_poly_sub();
-    bench_poly_mul_naive();
+    bench_poly_mul_scalar(g_demo_params);
+    bench_poly_mul_naive(g_demo_params);
     bench_poly_norm_inf();
-    bench_poly_inv();
+    bench_poly_inv(g_demo_params);
 
-    /* §7-10  poly_ntt */
-    bench_ntt_forward();
-    bench_ntt_inverse();
-    bench_ntt_roundtrip();
-    bench_ntt_mul();
-
-    /* §11-12  gauss */
     bench_gauss_sample_coeff();
     bench_gauss_sample_poly();
-
-    /* §13  xof */
     bench_xof_squeeze();
-
-    /* §14-15  csprng */
     bench_csprng_system();
     bench_csprng_seed();
-
-    /* §16-17  encode */
     bench_poly_encode();
     bench_poly_decode();
-
-    /* §18-20  hash */
     bench_sample_ring_element();
     bench_sample_challenge_polynomial();
     bench_coeff_reject_small();
-
-    /* §21  reject */
     bench_hash_to_uniform();
-
-    /* §22-24  ntru */
     bench_ntru_secret_pair();
     bench_sample_f_until_invertible();
     bench_ntru_trapgen();
 
     std::cout << "\n============================================================\n"
               << "  IBAGS benchmark complete.\n"
-              << "  Results written to benchmarking_output/benchmarking_ibags.txt\n"
+              << "  Results written to " << OUT_PATH << "\n"
               << "============================================================\n";
 
     return 0;

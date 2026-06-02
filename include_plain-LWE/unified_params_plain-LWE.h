@@ -3,13 +3,15 @@
 #include "decrypt_plain-LWE.h"
 
 /**
- * UnifiedParams — compile-time parameter selector
+ * UnifiedParams — compile-time parameter selector (加密/KEM 对标 Kyber)
  *
- * Security levels (CMakeLists.txt):
- *   cmake ..                                     → Demo (default, n=64,  q=8191)
- *   cmake .. -DSECURITY_LEVEL=1                  → NIST L1 (n=512, q=134219777)
- *   cmake .. -DSECURITY_LEVEL=3                  → NIST L3 (n=768, q=4294967291)
- *   cmake .. -DSECURITY_LEVEL=5                  → NIST L5 (n=1024,q=4294967311)
+ * NIST 安全级别 (CMake -DSECURITY_LEVEL=N):
+ *   无参数 (Demo) → n=64,  q=8191
+ *   Level 1       → n=512, q=134219777   (Kyber-512)
+ *   Level 3       → n=768, q=4294967291  (Kyber-768)
+ *   Level 5       → n=1024,q=4294967311  (Kyber-1024)
+ *
+ * 注: 签名模块 (IBAGS) 使用 NIST Levels 2/3/5 (对标 Dilithium)
  */
 namespace unified {
 

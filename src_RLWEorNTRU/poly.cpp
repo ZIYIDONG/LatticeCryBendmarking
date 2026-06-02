@@ -74,8 +74,12 @@ bool Poly::is_centered(const Params& pp) const {
 
 void Poly::reduce_mod_q(const Params& pp) {
     assert(n_ == pp.n && "dimension mismatch");
+    // 使用 % q 而非 Barrett: 环约减的 conv 累加值可超过 q·2^32 (n·q² at L3)
+    int64_t q = static_cast<int64_t>(pp.q);
     for (int i = 0; i < n_; ++i) {
-        coeffs_[i] = barrett_reduce(coeffs_[i], pp.q);
+        int64_t c = coeffs_[i] % q;
+        if (c < 0) c += q;
+        coeffs_[i] = c;
     }
 }
 
@@ -120,27 +124,53 @@ Poly poly_ring_reduce_raw(const Params& pp, const std::vector<int64_t>& conv) {
 
 Poly poly_add(const Poly& a, const Poly& b, const Params& pp) {
     assert(a.n() == b.n() && a.n() == pp.n);
+    const int64_t q = static_cast<int64_t>(pp.q);
     Poly result(pp.n);
     for (int i = 0; i < pp.n; ++i) {
-        result[i] = barrett_reduce(a[i] + b[i], pp.q);
+        int64_t r = a[i] + b[i];
+        // 输入在 [0,q), 和在 [0,2q-2], 至多一次条件减法
+        if (r >= q) r -= q;
+        result[i] = r;
     }
     return result;
 }
 
 Poly poly_sub(const Poly& a, const Poly& b, const Params& pp) {
     assert(a.n() == b.n() && a.n() == pp.n);
+    const int64_t q = static_cast<int64_t>(pp.q);
     Poly result(pp.n);
     for (int i = 0; i < pp.n; ++i) {
-        result[i] = barrett_reduce(a[i] - b[i], pp.q);
+        int64_t r = a[i] - b[i];
+        // 输入在 [0,q), 差在 [-(q-1), q-1], 至多一次条件加法
+        if (r < 0) r += q;
+        result[i] = r;
     }
     return result;
 }
 
 Poly poly_neg(const Poly& a, const Params& pp) {
     assert(a.n() == pp.n);
+    const int64_t q = static_cast<int64_t>(pp.q);
     Poly result(pp.n);
     for (int i = 0; i < pp.n; ++i) {
-        result[i] = barrett_reduce(-a[i], pp.q);
+        int64_t r = -a[i];
+        if (r < 0) r += q;
+        result[i] = r;
+    }
+    return result;
+}
+
+Poly poly_mul_scalar(const Poly& a, int64_t scalar, const Params& pp) {
+    assert(a.n() == pp.n);
+    const int64_t q = static_cast<int64_t>(pp.q);
+    Poly result(pp.n);
+    // 标量归一化到 [0, q) 确保乘积范围可控
+    int64_t s = scalar % q;
+    if (s < 0) s += q;
+    // 预计算 Barrett 常数，避免循环内 128-bit 除法
+    BarrettConst bc = make_barrett(pp.q);
+    for (int i = 0; i < pp.n; ++i) {
+        result[i] = barrett_reduce(a[i] * s, bc);
     }
     return result;
 }
@@ -149,7 +179,6 @@ Poly poly_mul_naive(const Poly& a, const Poly& b, const Params& pp) {
     assert(a.n() == b.n() && a.n() == pp.n);
     int n = pp.n;
 
-    // 卷积结果长度 2n-1
     std::vector<int64_t> conv(2 * n - 1, 0);
     for (int i = 0; i < n; ++i) {
         for (int j = 0; j < n; ++j) {
@@ -166,10 +195,11 @@ uint64_t poly_norm_inf(const Poly& a, const Params& pp) {
     assert(a.n() == pp.n);
     int64_t half_q = static_cast<int64_t>(pp.q) / 2;
     uint64_t max_abs = 0;
+    BarrettConst bc = make_barrett(pp.q);
 
     for (int i = 0; i < pp.n; ++i) {
         // 先转换到 centered 表示
-        int64_t c = barrett_reduce(a[i], pp.q);
+        int64_t c = barrett_reduce(a[i], bc);
         if (c > half_q) c -= static_cast<int64_t>(pp.q);
 
         // 安全计算绝对值，防止 INT64_MIN 溢出
@@ -190,9 +220,10 @@ bool poly_norm_bound_check(const Poly& a, uint64_t bound, const Params& pp) {
     assert(a.n() == pp.n);
     int64_t half_q = static_cast<int64_t>(pp.q) / 2;
     bool result = true; // 默认为 true，不早停
+    BarrettConst bc = make_barrett(pp.q);
 
     for (int i = 0; i < pp.n; ++i) {
-        int64_t c = barrett_reduce(a[i], pp.q);
+        int64_t c = barrett_reduce(a[i], bc);
         if (c > half_q) c -= static_cast<int64_t>(pp.q);
 
         uint64_t abs_val;
@@ -256,10 +287,10 @@ namespace {
     return -1;
 }
 
-/// 规约多项式系数到 [0, q)
-void poly_mod_q(std::vector<int64_t>& a, int64_t q) {
+/// 规约多项式系数到 [0, q) (Barrett 版本)
+void poly_mod_q(std::vector<int64_t>& a, const BarrettConst& bc) {
     for (auto& c : a) {
-        c = ((c % q) + q) % q;
+        c = barrett_reduce(c, bc);
     }
 }
 
@@ -268,57 +299,54 @@ void poly_trim(std::vector<int64_t>& a) {
     while (!a.empty() && a.back() == 0) a.pop_back();
 }
 
-/// 多项式乘以标量 mod q
-void poly_scale_mod_q(std::vector<int64_t>& a, int64_t s, int64_t q) {
+/// 多项式乘以标量 mod q (Barrett 版本)
+void poly_scale_mod_q(std::vector<int64_t>& a, int64_t s, const BarrettConst& bc) {
+    int64_t q = static_cast<int64_t>(bc.q);
     s = ((s % q) + q) % q;
     for (auto& c : a) {
-        c = (c * s) % q;
-        if (c < 0) c += q;
+        c = barrett_reduce(c * s, bc);
     }
 }
 
-/// 多项式加法: a += b (mod q), a 自动扩容
-void poly_add_raw(std::vector<int64_t>& a, const std::vector<int64_t>& b, int64_t q) {
+/// 多项式加法: a += b (mod q), a 自动扩容 (Barrett 版本)
+void poly_add_raw(std::vector<int64_t>& a, const std::vector<int64_t>& b, const BarrettConst& bc) {
     if (b.size() > a.size()) a.resize(b.size(), 0);
     for (size_t i = 0; i < b.size(); ++i) {
-        a[i] = (a[i] + b[i]) % q;
-        if (a[i] < 0) a[i] += q;
+        a[i] = barrett_reduce(a[i] + b[i], bc);
     }
 }
 
-/// 多项式减法: a -= b (mod q), a 自动扩容
-void poly_sub_raw(std::vector<int64_t>& a, const std::vector<int64_t>& b, int64_t q) {
+/// 多项式减法: a -= b (mod q), a 自动扩容 (Barrett 版本)
+void poly_sub_raw(std::vector<int64_t>& a, const std::vector<int64_t>& b, const BarrettConst& bc) {
     if (b.size() > a.size()) a.resize(b.size(), 0);
     for (size_t i = 0; i < b.size(); ++i) {
-        a[i] = (a[i] - b[i]) % q;
-        if (a[i] < 0) a[i] += q;
+        a[i] = barrett_reduce(a[i] - b[i], bc);
     }
 }
 
 /// 多项式乘法（朴素卷积），结果长度 len(a)+len(b)-1
+/// Barrett 版本：使用预计算常数避免 % q 硬除法
 [[nodiscard]] std::vector<int64_t> poly_mul_raw(
         const std::vector<int64_t>& a,
         const std::vector<int64_t>& b,
-        int64_t q) {
+        const BarrettConst& bc) {
     if (a.empty() || b.empty()) return {};
     std::vector<int64_t> res(a.size() + b.size() - 1, 0);
     for (size_t i = 0; i < a.size(); ++i) {
         if (a[i] == 0) continue;
         for (size_t j = 0; j < b.size(); ++j) {
             if (b[j] == 0) continue;
-            int64_t prod = (a[i] * b[j]) % q;
-            if (prod < 0) prod += q;
-            res[i + j] = (res[i + j] + prod) % q;
-            if (res[i + j] < 0) res[i + j] += q;
+            int64_t prod = barrett_reduce(a[i] * b[j], bc);
+            res[i + j] = barrett_reduce(res[i + j] + prod, bc);
         }
     }
     poly_trim(res);
     return res;
 }
 
-/// 环约减: 将长度 ≤ 2n-1 的多项式对 x^n + 1 取模
+/// 环约减: 将长度 ≤ 2n-1 的多项式对 x^n + 1 取模 (Barrett 版本)
 [[nodiscard]] std::vector<int64_t> poly_ring_reduce_vec(
-        const std::vector<int64_t>& conv, int n, int64_t q) {
+        const std::vector<int64_t>& conv, int n, const BarrettConst& bc) {
     std::vector<int64_t> res(n, 0);
     size_t len = conv.size();
     for (int i = 0; i < n; ++i) {
@@ -327,9 +355,9 @@ void poly_sub_raw(std::vector<int64_t>& a, const std::vector<int64_t>& b, int64_
         // x^{n+i} = -x^i, 所以系数乘 -1
         int j = i + n;
         if (static_cast<size_t>(j) < len) {
-            sum = (sum - conv[j]) % q;
+            sum = barrett_reduce(sum - conv[j], bc);
         }
-        res[i] = (sum % q + q) % q;
+        res[i] = barrett_reduce(sum, bc);
     }
     return res;
 }
@@ -344,8 +372,10 @@ Status poly_inv(const Poly& a, const Params& pp, Poly* inv) {
         return {ErrorCode::InvalidParams, "poly_inv: dimension mismatch"};
     }
 
-    int n = pp.n;
-    int64_t q = static_cast<int64_t>(pp.q);
+    const int n = pp.n;
+    const int64_t q = static_cast<int64_t>(pp.q);
+    // 预计算 Barrett 常数，避免热点路径中每系数 % q 硬除法
+    const BarrettConst bc = make_barrett(pp.q);
 
     // ── 扩展欧几里得算法在 Z_q[x] 中计算 a(x)^{-1} mod (q, x^n+1) ──
     // 参考: IEEE P1363.1 / NTRU inversion / Falcon keygen poly_small_invert
@@ -366,7 +396,7 @@ Status poly_inv(const Poly& a, const Params& pp, Poly* inv) {
     std::vector<int64_t> r0(n + 1, 0);
     r0[0] = 1; r0[n] = 1;          // r0 = x^n + 1
     std::vector<int64_t> r1 = a.coeffs();
-    poly_mod_q(r1, q);
+    poly_mod_q(r1, bc);
     poly_trim(r1);
 
     // 检查零多项式
@@ -400,8 +430,7 @@ Status poly_inv(const Poly& a, const Params& pp, Poly* inv) {
             int deg_rem = poly_deg(remainder);
             if (deg_rem < deg_r1) break;
             int deg_diff = deg_rem - deg_r1;
-            int64_t factor = (remainder[static_cast<size_t>(deg_rem)] * inv_lead_r1) % q;
-            if (factor < 0) factor += q;
+            int64_t factor = barrett_reduce(remainder[static_cast<size_t>(deg_rem)] * inv_lead_r1, bc);
 
             // 记录商项
             if (static_cast<int>(quotient.size()) <= deg_diff) {
@@ -412,25 +441,23 @@ Status poly_inv(const Poly& a, const Params& pp, Poly* inv) {
             // remainder -= factor * x^{deg_diff} * r1
             for (int k = 0; k <= deg_r1; ++k) {
                 size_t idx = static_cast<size_t>(k + deg_diff);
-                int64_t sub = (factor * r1[static_cast<size_t>(k)]) % q;
-                if (sub < 0) sub += q;
-                remainder[idx] = (remainder[idx] - sub) % q;
-                if (remainder[idx] < 0) remainder[idx] += q;
+                int64_t sub = barrett_reduce(factor * r1[static_cast<size_t>(k)], bc);
+                remainder[idx] = barrett_reduce(remainder[idx] - sub, bc);
             }
             poly_trim(remainder);
         }
 
         // ── 更新 t: t = t0 - quotient * t1 ──
-        std::vector<int64_t> qt1 = poly_mul_raw(quotient, t1, q);
+        std::vector<int64_t> qt1 = poly_mul_raw(quotient, t1, bc);
         std::vector<int64_t> t_new = t0;
-        poly_sub_raw(t_new, qt1, q);
+        poly_sub_raw(t_new, qt1, bc);
         poly_trim(t_new);
         // 环约减 t_new 到度数 < n
         if (static_cast<int>(t_new.size()) > n) {
-            t_new = poly_ring_reduce_vec(t_new, n, q);
+            t_new = poly_ring_reduce_vec(t_new, n, bc);
         }
         t_new.resize(static_cast<size_t>(n), 0);
-        poly_mod_q(t_new, q);
+        poly_mod_q(t_new, bc);
 
         // ── 移位: r0 ← r1, r1 ← remainder, t0 ← t1, t1 ← t_new ──
         r0 = std::move(r1);
@@ -456,7 +483,7 @@ Status poly_inv(const Poly& a, const Params& pp, Poly* inv) {
     }
 
     // inv = lambda^{-1} * t0 mod (q, x^n+1)
-    poly_scale_mod_q(t0, inv_lambda, q);
+    poly_scale_mod_q(t0, inv_lambda, bc);
     t0.resize(static_cast<size_t>(n), 0);
 
     *inv = Poly(pp.n, std::move(t0));

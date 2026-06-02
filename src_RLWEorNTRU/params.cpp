@@ -41,7 +41,11 @@ const char* param_id_name(ParamId id) noexcept {
 // §2  Params 工厂函数
 // ============================================================================
 
-/// 编译期安全级别选择 (与 unified_params_plain-LWE.h 一致)
+/// NIST 安全级别映射 (签名方案对标 Dilithium)
+///   LATTICE_LEVEL_1  → IBAGS Level 2 (n=512, Dilithium2, 签名无 Level 1)
+///   LATTICE_LEVEL_3  → IBAGS Level 3 (n=1024, Dilithium3)
+///   LATTICE_LEVEL_5  → IBAGS Level 5 (n=1024, Dilithium5)
+///   无定义           → Demo (n=64)
 Params default_params() {
 #if defined(LATTICE_LEVEL_5)
     return Params::params_level5_1024();
@@ -49,7 +53,7 @@ Params default_params() {
     return Params::params_level3_1024();
 #elif defined(LATTICE_LEVEL_1)
     return Params::params_level2_512();
-#else  // default (Demo): n=64
+#else  // Demo
     return Params::params_demo_64();
 #endif
 }
@@ -58,7 +62,7 @@ Params Params::params_demo_64() {
     Params p;
     p.param_id            = ParamId::IBAGS_64_DEMO;
     p.n                   = 64;
-    p.q                   = 8191;            // 13-bit, matches Plain-LWE Demo
+    p.q                   = 7681;            // 13-bit NTT-friendly prime (7681 ≡ 1 mod 128)
     p.sigma               = 1.0;
     p.eta1                = 4;
     p.eta2                = 2;
@@ -92,7 +96,7 @@ Params Params::params_level3_1024() {
     Params p;
     p.param_id            = ParamId::IBAGS_1024_LEVEL3;
     p.n                   = 1024;
-    p.q                   = 16777259;        // 25-bit
+    p.q                   = 16900097;        // 25-bit NTT-friendly prime (16900097 ≡ 1 mod 2048, verified prime)
     p.sigma               = 1.0;
     p.eta1                = 55;
     p.eta2                = 28;

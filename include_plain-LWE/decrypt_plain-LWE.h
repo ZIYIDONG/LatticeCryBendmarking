@@ -162,12 +162,14 @@ inline Vec vec_mat_mul(const Vec& v, const Mat& A, long q) {
     int R = (int)v.size();
     int C = (int)A[0].size();
     Vec result(C, 0);
+    // 预计算 Barrett 常数，消除内循环 % q 硬除法
+    unsigned long long mu = matops::barrett_mu(q);
     for (int r = 0; r < R; ++r) {
         long vr = v[r];
         if (vr == 0) continue;
         const Vec& row = A[r];
         for (int c = 0; c < C; ++c)
-            result[c] = matops::mod_pos(result[c] + vr * row[c], q);
+            result[c] = matops::barrett_reduce_lwe(result[c] + vr * row[c], q, mu);
     }
     return result;
 }
@@ -177,8 +179,9 @@ inline Vec vec_mat_mul(const Vec& v, const Mat& A, long q) {
  */
 inline long vec_dot_mod(const Vec& a, const Vec& b, long q) {
     long acc = 0;
+    unsigned long long mu = matops::barrett_mu(q);
     for (size_t i = 0; i < a.size(); ++i)
-        acc = matops::mod_pos(acc + a[i] * b[i], q);
+        acc = matops::barrett_reduce_lwe(acc + a[i] * b[i], q, mu);
     return acc;
 }
 

@@ -69,40 +69,62 @@ inline Mat make_mat(int rows, int cols, long fill = 0) {
     return Mat(rows, Vec(cols, fill));
 }
 
+// ── Barrett 约减 (mp12 专用) ──
+inline unsigned long long barrett_mu(long q) {
+    return (unsigned long long)(((unsigned __int128)1 << 64) / (unsigned long long)q);
+}
+inline long barrett_reduce_mp12(long x, long q, unsigned long long mu) {
+    bool neg = (x < 0);
+    unsigned long long abs_x;
+    if (neg) abs_x = (unsigned long long)(-(x + 1)) + 1;
+    else     abs_x = (unsigned long long)x;
+    unsigned long long t = (unsigned long long)(((unsigned __int128)abs_x * mu) >> 64);
+    unsigned long long r = abs_x - t * (unsigned long long)q;
+    if (r >= (unsigned long long)q) r -= q;
+    if (neg && r != 0) r = (unsigned long long)q - r;
+    return (long)r;
+}
+inline long mod_sub(long x, long q) { if (x < 0) x += q; return x; }
+
+// 向后兼容的非热点 mod
 inline long mod(long x, long q) {
-    return ((x % q) + q) % q;
+    long r = x % q;
+    if (r < 0) r += q;
+    return r;
 }
 
-// C = A*B mod q
+// C = A*B mod q  (Barrett 内循环)
 inline Mat mat_mul_mod(const Mat& A, const Mat& B, long q) {
     int r = A.size(), n = B.size(), c = B[0].size();
     Mat C = make_mat(r, c);
+    unsigned long long mu = barrett_mu(q);
     for (int i = 0; i < r; i++)
         for (int k = 0; k < n; k++) {
             if (A[i][k] == 0) continue;
             for (int j = 0; j < c; j++)
-                C[i][j] = mod(C[i][j] + A[i][k] * B[k][j], q);
+                C[i][j] = barrett_reduce_mp12(C[i][j] + A[i][k] * B[k][j], q, mu);
         }
     return C;
 }
 
-// b = A*x mod q
+// b = A*x mod q  (Barrett 内循环)
 inline Vec mat_vec_mod(const Mat& A, const Vec& x, long q) {
     int r = A.size(), c = A[0].size();
     Vec b(r, 0);
+    unsigned long long mu = barrett_mu(q);
     for (int i = 0; i < r; i++)
         for (int j = 0; j < c; j++)
-            b[i] = mod(b[i] + A[i][j] * x[j], q);
+            b[i] = barrett_reduce_mp12(b[i] + A[i][j] * x[j], q, mu);
     return b;
 }
 
-// A - B mod q
+// A - B mod q  (条件加法, 输入范围 [-(q-1), q-1])
 inline Mat mat_sub_mod(const Mat& A, const Mat& B, long q) {
     int r = A.size(), c = A[0].size();
     Mat C = make_mat(r, c);
     for (int i = 0; i < r; i++)
         for (int j = 0; j < c; j++)
-            C[i][j] = mod(A[i][j] - B[i][j], q);
+            C[i][j] = mod_sub(A[i][j] - B[i][j], q);
     return C;
 }
 

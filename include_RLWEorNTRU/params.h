@@ -18,7 +18,7 @@
  * 生产注意事项 (Production Notes):
  *  - PoC: 当前参数集硬编码在源码中
  *  - 生产: 应从受信配置源加载（签名固件 / HSM / 远程 attestation 报告）
- *  - q 的选择: 对 NTT 友好需满足 q ≡ 1 (mod 2n)，当前 q 值为 PoC 暂用值
+ *  - q 的选择: 对 NTT 友好需满足 q ≡ 1 (mod 2n)，所有 4 个参数集均已使用 NTT 友好素数
  */
 
 #include "errors.h"
@@ -33,16 +33,16 @@ namespace ibags {
 // §1  ParamId — 参数集标识符 (liboqs 风格)
 // ============================================================================
 enum class ParamId : uint16_t {
-    /// Demo 级: n=64, q=8191, 与 Plain-LWE Demo 一致，仅测试用
+    /// Demo 级: n=64, q=7681 (13-bit)
     IBAGS_64_DEMO      = 0x0040,
 
-    /// NIST Level 2: n=512, q=8404993 (24-bit), 对标 Dilithium2
+    /// NIST Level 2 (签名): n=512, q=8404993, 对标 Dilithium2
     IBAGS_512_LEVEL2   = 0x0200,
 
-    /// NIST Level 3: n=1024, q=16777259 (25-bit), 对标 Dilithium3
+    /// NIST Level 3 (签名): n=1024, q=16900097, 对标 Dilithium3
     IBAGS_1024_LEVEL3  = 0x0300,
 
-    /// NIST Level 5: n=1024, q=4206593 (23-bit), 对标 Dilithium5 / Falcon-1024
+    /// NIST Level 5 (签名): n=1024, q=4206593, 对标 Dilithium5
     IBAGS_1024_LEVEL5  = 0x0500,
 
     // ── 保留区间: 0x0600–0x0FFF 用于未来参数集 ──

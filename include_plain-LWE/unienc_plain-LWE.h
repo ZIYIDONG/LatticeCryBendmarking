@@ -102,11 +102,12 @@ inline Mat scalar_mat_mul(long mu, const Mat& M, long q) {
         for (int i = 0; i < r; i++) C[i] = M[i];
         return C;
     }
+    unsigned long long mu_barrett = matops::barrett_mu(q);
     for (int i = 0; i < r; i++) {
         const Vec& mi = M[i];
         Vec& ci = C[i];
         for (int j = 0; j < c; j++)
-            ci[j] = mod_pos(mu_norm * mi[j], q);
+            ci[j] = matops::barrett_reduce_lwe(mu_norm * mi[j], q, mu_barrett);
     }
     return C;
 }
@@ -161,24 +162,27 @@ inline Vec lwe_encrypt_bit(const Mat& A, long mu, long q,
     Vec s(m);
     for (int j = 0; j < m; j++) s[j] = bit(rng);
 
-    // ② V = A·s
+    // ② V = A·s  (Barrett 约减)
     Vec V(N, 0);
+    unsigned long long mu_bar = matops::barrett_mu(q);
     for (int i = 0; i < N; i++) {
         long acc = 0;
         for (int j = 0; j < m; j++) acc += A[i][j] * s[j];
-        V[i] = mod_pos(acc, q);
+        V[i] = matops::barrett_reduce_lwe(acc, q, mu_bar);
     }
 
-    // ③ 加高斯噪声 e ∈ Z^N
+    // ③ 加高斯噪声 e ∈ Z^N  (条件加减)
     std::normal_distribution<double> gauss(0.0, sigma);
     for (int i = 0; i < N; i++) {
         long ei = (long)std::llround(gauss(rng));
-        V[i] = mod_pos(V[i] + ei, q);
+        long sum = V[i] + ei;
+        V[i] = matops::mod_add(matops::mod_sub(sum, q), q);
     }
 
     // ④ 把 μ 编码到第一个分量: 加 μ·⌊q/2⌋
     if ((mu & 1) == 1) {
-        V[0] = mod_pos(V[0] + q / 2, q);
+        long sum = V[0] + q / 2;
+        V[0] = (sum >= q) ? sum - q : sum;
     }
     return V;
 }

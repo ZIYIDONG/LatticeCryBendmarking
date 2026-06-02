@@ -7,6 +7,7 @@
 #include "../include_RLWEorNTRU/gauss.h"
 #include "../include_RLWEorNTRU/xof.h"
 #include "../include_RLWEorNTRU/secure_memory.h"
+#include "../include_RLWEorNTRU/poly_ntt.h"
 
 #include <cassert>
 #include <cstring>
@@ -130,8 +131,18 @@ Status ntru_trapgen(const Params& pp,
         }
     }
 
-    // ── Step 4: h = g * f_inv ──
-    Poly h = poly_mul_naive(g, f_inv, pp);
+    // ── Step 4: h = g * f_inv (NTT-based) ──
+    Poly h(pp.n);
+    if (is_ntt_friendly(pp)) {
+        NttTable tbl = NttTable::create(pp);
+        Status mul_st = poly_mul_ntt(g, f_inv, tbl, &h);
+        if (!mul_st.ok()) {
+            return {ErrorCode::InternalError,
+                    "ntru_trapgen: NTT multiplication failed: " + mul_st.message()};
+        }
+    } else {
+        h = poly_mul_naive(g, f_inv, pp);
+    }
 
     // ── Step 5: Optionally compute h_inv ──
     bool h_is_invertible = false;
@@ -228,8 +239,14 @@ bool check_h_from_f_g(const Params& pp,
     // f 必须可逆，否则 h = g * f^{-1} 无意义
     if (!poly_is_invertible_mod_q(f, pp)) return false;
 
-    // h * f mod (q, x^n+1)
-    Poly hf = poly_mul_naive(h, f, pp);
+    // h * f mod (q, x^n+1) — prefer NTT if available
+    Poly hf(pp.n);
+    if (is_ntt_friendly(pp)) {
+        NttTable tbl = NttTable::create(pp);
+        (void)poly_mul_ntt(h, f, tbl, &hf);
+    } else {
+        hf = poly_mul_naive(h, f, pp);
+    }
 
     // 与 g 比较
     return poly_equal_ct(hf, g);
@@ -266,8 +283,15 @@ bool check_trapdoor_basis(const Params& pp,
 
     // 5. NTRU 关系: f*G - g*F ≡ q (mod x^n+1)
     //    仅在 F 和 G 非平凡时检查（跳过 PoC 零多项式情况）
-    Poly fG = poly_mul_naive(basis.f, basis.capG, pp);
-    Poly gF = poly_mul_naive(basis.g, basis.capF, pp);
+    Poly fG(pp.n), gF(pp.n);
+    if (is_ntt_friendly(pp)) {
+        NttTable tbl = NttTable::create(pp);
+        (void)poly_mul_ntt(basis.f, basis.capG, tbl, &fG);
+        (void)poly_mul_ntt(basis.g, basis.capF, tbl, &gF);
+    } else {
+        fG = poly_mul_naive(basis.f, basis.capG, pp);
+        gF = poly_mul_naive(basis.g, basis.capF, pp);
+    }
     Poly ntru_diff = poly_sub(fG, gF, pp);
 
     // 期望: f*G - g*F ≡ q (mod x^n+1)，即系数全 0 模 q × 常数 q。

@@ -108,6 +108,10 @@ Poly poly_sub(const Poly& a, const Poly& b, const Params& pp);
 /// additive inverse: out = −a  (mod q, Y^n+1)
 Poly poly_neg(const Poly& a, const Params& pp);
 
+/// scalar multiplication: out = s * a  (mod q, Y^n+1)
+/// 逐系数乘以标量 s 后 Barrett 约减，O(n)
+Poly poly_mul_scalar(const Poly& a, int64_t scalar, const Params& pp);
+
 /// Naive O(n^2) negacyclic convolution (仅 PoC/test)
 /// 使用 Y^n = -1 规则
 Poly poly_mul_naive(const Poly& a, const Poly& b, const Params& pp);
