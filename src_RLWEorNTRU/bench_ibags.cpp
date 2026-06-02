@@ -120,7 +120,7 @@ static void print_and_save(const std::string& title, const BenchResult& r,
     }
     oss << "\n";
 
-    std::cout << "\n--- " << title << " ---\n" << oss.str();
+    std::cout << "\n--- " << title << " ---\n" << oss.str() << std::flush;
 
     constexpr const char* OUT_PATH = "benchmarking_output/benchmarking_ibags.txt";
     std::ofstream fout(OUT_PATH, std::ios::app);
@@ -934,13 +934,10 @@ int main() {
         }
     }
 
+    // Non-NTT benchmarks (Demo params only, operations not in NTT loop)
     bench_poly_add();
     bench_poly_sub();
-    bench_poly_mul_scalar(g_demo_params);
-    bench_poly_mul_naive(g_demo_params);
     bench_poly_norm_inf();
-    bench_poly_inv(g_demo_params);
-
     bench_gauss_sample_coeff();
     bench_gauss_sample_poly();
     bench_xof_squeeze();
