@@ -959,5 +959,15 @@ int main() {
               << "  Results written to " << OUT_PATH << "\n"
               << "============================================================\n";
 
+    {
+        std::ofstream fout(OUT_PATH, std::ios::app);
+        if (fout.is_open()) {
+            fout << "\n==========================================================\n"
+                 << "  IBAGS Benchmark — END (" << make_timestamp() << ")\n"
+                 << "==========================================================\n";
+            fout.close();
+        }
+    }
+
     return 0;
 }
